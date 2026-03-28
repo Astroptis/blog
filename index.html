@@ -6,8 +6,8 @@
     <title>林间随笔 | GitHub 云存储博客</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #f5f3ef; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; color: #2c2a29; line-height: 1.5; padding: 2rem 1rem; }
-        .blog-wrapper { max-width: 1200px; margin: 0 auto; background: #ffffff; border-radius: 2rem; box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.08); overflow: hidden; }
+        body { background: #f5f3ef; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; color: #2c2a29; line-height: 1.5; padding: 2rem 1rem; }
+        .blog-wrapper { max-width: 1200px; margin: 0 auto; background: #ffffff; border-radius: 2rem; box-shadow: 0 20px 35px -12px rgba(0,0,0,0.08); overflow: hidden; }
         .blog-content { padding: 2rem 2rem 2.5rem; }
         .blog-header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid #f0eae2; position: relative; }
         .blog-title { font-size: 2.8rem; font-weight: 700; background: linear-gradient(135deg, #3b2e24, #7f5e3c); background-clip: text; -webkit-background-clip: text; color: transparent; margin-bottom: 0.5rem; }
@@ -46,7 +46,7 @@
         .loading { text-align: center; padding: 3rem; color: #aa9b8c; }
         .saving-indicator { position: fixed; top: 20px; right: 20px; background: #2c2a29; color: white; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; z-index: 1000; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
         .empty-articles { text-align: center; padding: 3rem; color: #aa947c; background: #fefcf8; border-radius: 1.5rem; border: 1px dashed #e4d9ce; }
-        .error-toast { position: fixed; bottom: 20px; left: 20px; background: #b55a3c; color: white; padding: 8px 18px; border-radius: 40px; font-size: 0.8rem; z-index: 999; box-shadow: 0 2px 10px rgba(0,0,0,0.2); max-width: 90%; word-break: break-word; }
+        .debug-info { position: fixed; bottom: 10px; right: 10px; background: #f0f0f0; border-radius: 8px; padding: 4px 8px; font-size: 10px; color: #666; cursor: pointer; opacity: 0.6; }
     </style>
 </head>
 <body>
@@ -60,6 +60,7 @@
     <footer>© 林间集 · 数据存储于 GitHub 仓库</footer>
 </div>
 <div id="savingIndicator" class="saving-indicator">保存中...</div>
+<div class="debug-info" id="debugInfo">🔧 点击查看调试信息</div>
 
 <script>
     // ==================== GitHub 配置 ====================
@@ -76,7 +77,6 @@
     let githubToken = null;
     let isSaving = false;
 
-    // 默认数据 - 文章列表为空
     const DEFAULT_DATA = {
         blogTitle: "林间随笔",
         author: "林染秋",
@@ -90,29 +90,26 @@
     };
 
     let blogData = { ...DEFAULT_DATA };
+    let lastError = null;
 
     function showSaving(show) {
         const indicator = document.getElementById('savingIndicator');
         if (indicator) indicator.style.opacity = show ? '1' : '0';
     }
 
-    function showErrorToast(msg) {
-        const toast = document.createElement('div');
-        toast.className = 'error-toast';
-        toast.textContent = msg;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 5000);
-    }
-
-    function showToast(msg, bgColor) {
+    function showToast(msg, bgColor = "#2c2a29") {
         const toast = document.createElement('div');
         toast.textContent = msg;
-        toast.style.cssText = `position:fixed; bottom:20px; left:20px; background:${bgColor}; color:white; padding:8px 18px; border-radius:40px; font-size:0.8rem; z-index:999; box-shadow:0 2px 10px rgba(0,0,0,0.2);`;
+        toast.style.cssText = `position:fixed; bottom:20px; left:20px; background:${bgColor}; color:white; padding:8px 18px; border-radius:40px; font-size:0.8rem; z-index:999; box-shadow:0 2px 10px rgba(0,0,0,0.2); max-width:90%; word-break:break-word;`;
         document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
+        setTimeout(() => toast.remove(), 4000);
     }
 
-    // 安全的 Base64 解码（支持 UTF-8）
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;'));
+    }
+
     function base64Decode(str) {
         try {
             return decodeURIComponent(escape(atob(str)));
@@ -131,17 +128,18 @@
                     'Accept': 'application/vnd.github.v3+json',
                     'Cache-Control': 'no-cache, no-store, must-revalidate'
                 },
-                mode: 'cors'
+                mode: 'cors',
+                credentials: 'omit'
             });
             if (res.status === 404) return null;
             if (!res.ok) {
-                throw new Error(`HTTP ${res.status}`);
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
             }
             const data = await res.json();
             return { sha: data.sha, content: data.content };
         } catch (err) {
             console.error('获取文件失败:', err);
-            throw new Error(`无法连接GitHub API: ${err.message}`);
+            throw err;
         }
     }
 
@@ -154,69 +152,65 @@
                 blogData = { ...DEFAULT_DATA, ...json };
                 if (!blogData.articles) blogData.articles = [];
             } else {
-                // 文件不存在，创建默认数据
+                // 文件不存在，创建默认数据（如果已有 token 则直接保存）
                 if (githubToken) {
                     await saveToGitHub(DEFAULT_DATA);
                 }
                 blogData = { ...DEFAULT_DATA };
             }
         } catch (err) {
-            console.error("加载失败，使用默认数据", err);
+            console.error("加载失败", err);
+            lastError = err;
+            showToast(`⚠️ 加载失败: ${err.message}`, "#b55a3c");
             blogData = { ...DEFAULT_DATA };
-            showErrorToast("⚠️ 加载失败: " + err.message);
         }
         renderFullBlog();
     }
 
     async function saveToGitHub(data) {
-        if (!githubToken) throw new Error("未提供令牌");
+        if (!githubToken) throw new Error("未提供 GitHub Token");
         if (isSaving) return false;
-        
         isSaving = true;
         showSaving(true);
-        
         try {
             const jsonStr = JSON.stringify(data, null, 2);
             const content = btoa(unescape(encodeURIComponent(jsonStr)));
-            
             let sha = null;
             try {
                 const file = await getFileSha();
                 if (file) sha = file.sha;
-            } catch (e) { }
-            
+            } catch (e) { /* 文件不存在则忽略 */ }
             const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`;
-            const body = { 
-                message: `更新博客数据 ${new Date().toLocaleString()}`, 
-                content: content, 
-                branch: GITHUB_CONFIG.branch 
+            const body = {
+                message: `更新博客数据 ${new Date().toLocaleString()}`,
+                content: content,
+                branch: GITHUB_CONFIG.branch
             };
             if (sha) body.sha = sha;
-            
             const res = await fetch(url, {
                 method: 'PUT',
-                headers: { 
+                headers: {
                     'Authorization': `token ${githubToken}`,
                     'Accept': 'application/vnd.github.v3+json',
                     'Content-Type': 'application/json',
                     'Cache-Control': 'no-cache'
                 },
                 body: JSON.stringify(body),
-                mode: 'cors'
+                mode: 'cors',
+                credentials: 'omit'
             });
-            
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
                 try {
-                    const err = await res.json();
-                    errorMsg = err.message || errorMsg;
+                    const errData = await res.json();
+                    errorMsg = errData.message || errorMsg;
                 } catch(e) {}
                 throw new Error(errorMsg);
             }
-            
             return true;
         } catch (err) {
             console.error('保存失败:', err);
+            lastError = err;
             throw err;
         } finally {
             isSaving = false;
@@ -224,31 +218,20 @@
         }
     }
 
-    async function saveAllData(showToastMsg = true) {
+    async function saveAllData(showMsg = true) {
         if (!editMode) return false;
         if (!githubToken) {
-            if (showToastMsg) showToast("❌ 未登录，请先点击管理员登录", "#b55a3c");
+            if (showMsg) showToast("❌ 未登录，请先点击管理员登录", "#b55a3c");
             return false;
         }
         try {
             await saveToGitHub(blogData);
-            if (showToastMsg) showToast("✅ 数据已保存到 GitHub", "#2c2a29");
+            if (showMsg) showToast("✅ 数据已保存到 GitHub", "#2c2a29");
             return true;
         } catch (err) {
-            console.error(err);
-            if (showToastMsg) showToast("❌ 保存失败：" + err.message, "#b55a3c");
+            if (showMsg) showToast(`❌ 保存失败: ${err.message}`, "#b55a3c");
             return false;
         }
-    }
-
-    function escapeHtml(str) {
-        if (!str) return '';
-        return String(str).replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
     }
 
     // B站视频转换
@@ -283,8 +266,8 @@
     }
 
     function editVideoHandler() {
-        const currentInput = blogData.videoEmbed || "BV1GJ411x7h7";
-        const newVal = prompt("🎬 更换哔哩哔哩视频\n\n支持格式：\n• BV号 (如 BV1GJ411x7h7)\n• 视频链接\n• av号 (如 av123456)\n\n当前值: " + currentInput, currentInput);
+        const current = blogData.videoEmbed || "BV1GJ411x7h7";
+        const newVal = prompt("🎬 更换哔哩哔哩视频\n\n支持格式：\n• BV号 (如 BV1GJ411x7h7)\n• 视频链接\n• av号 (如 av123456)\n\n当前值: " + current, current);
         if (newVal === null) return;
         if (newVal.trim() === "") {
             blogData.videoEmbed = "BV1GJ411x7h7";
@@ -318,7 +301,7 @@
         if (!title) return;
         const content = prompt("输入文章正文:", "");
         if (content === null) return;
-        const imageUrl = prompt("输入封面图片URL (可选，留空使用默认):", "");
+        const imageUrl = prompt("输入封面图片URL (可选):", "");
         const newArticle = {
             id: Date.now() + '-' + Math.random().toString(36).substr(2, 6),
             title: title.trim(),
@@ -370,7 +353,6 @@
     function renderFullBlog() {
         const container = document.getElementById('blogRoot');
         if (!container) return;
-
         document.title = blogData.blogTitle + " | GitHub 博客";
 
         const controlBtn = document.getElementById('masterControlBtn');
@@ -449,11 +431,10 @@
     function enableEditMode() {
         const pwd = prompt("🔑 管理员密码：", "");
         if (pwd !== ADMIN_PASSWORD) { alert("密码错误"); return false; }
-        const token = prompt("🔧 请输入 GitHub Personal Access Token\n\n获取步骤：\n1. 访问 https://github.com/settings/tokens\n2. 点击 Generate new token (classic)\n3. 勾选 repo 权限\n4. 生成并复制令牌", "");
+        const token = prompt("🔧 请输入 GitHub Personal Access Token\n\n获取步骤：\n1. 访问 https://github.com/settings/tokens\n2. 点击 Generate new token (classic)\n3. 勾选 repo 权限\n4. 生成并复制令牌（只显示一次）\n\n注意：令牌不要带空格，直接粘贴", "");
         if (!token) { alert("未提供令牌，无法保存数据"); return false; }
-        githubToken = token;
+        githubToken = token.trim();
         editMode = true;
-        // 重新加载数据以确保有最新内容
         loadFromGitHub();
         showToast("✅ 编辑模式已开启，所有修改将保存到 GitHub 仓库", "#2c2a29");
         return true;
@@ -468,6 +449,12 @@
 
     function onMasterControlClick() { editMode ? disableEditMode() : enableEditMode(); }
 
+    function showDebugInfo() {
+        const info = `Token 状态: ${githubToken ? '已设置' : '未设置'}\n编辑模式: ${editMode ? '开启' : '关闭'}\n上次错误: ${lastError ? lastError.message : '无'}\n仓库: ${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}\n文件: ${GITHUB_CONFIG.path}`;
+        alert(info);
+        console.log({ githubToken: !!githubToken, editMode, lastError, GITHUB_CONFIG });
+    }
+
     async function init() {
         await loadFromGitHub();
         const btn = document.getElementById('masterControlBtn');
@@ -476,6 +463,7 @@
             btn.parentNode.replaceChild(newBtn, btn);
             newBtn.addEventListener('click', onMasterControlClick);
         }
+        document.getElementById('debugInfo')?.addEventListener('click', showDebugInfo);
     }
     init();
 </script>
