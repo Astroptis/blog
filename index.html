@@ -48,14 +48,14 @@
         .empty-articles { text-align: center; padding: 3rem; color: #aa947c; background: #fefcf8; border-radius: 1.5rem; border: 1px dashed #e4d9ce; }
         
         /* 日志面板样式 */
-        .log-panel { position: fixed; bottom: 20px; right: 20px; width: 400px; max-width: 90vw; background: #1e1e1e; color: #d4d4d4; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 1001; font-family: 'Monaco', 'Menlo', monospace; font-size: 12px; transition: all 0.3s; }
+        .log-panel { position: fixed; bottom: 20px; right: 20px; width: 450px; max-width: 90vw; background: #1e1e1e; color: #d4d4d4; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 1001; font-family: 'Monaco', 'Menlo', monospace; font-size: 12px; transition: all 0.3s; }
         .log-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #2d2d2d; border-radius: 12px 12px 0 0; cursor: pointer; border-bottom: 1px solid #3d3d3d; }
         .log-header h3 { font-size: 13px; font-weight: 600; margin: 0; color: #fff; }
         .log-controls { display: flex; gap: 8px; }
         .log-controls button { background: #3d3d3d; color: #fff; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; }
         .log-controls button:hover { background: #4d4d4d; }
-        .log-content { max-height: 300px; overflow-y: auto; padding: 8px 12px; font-size: 11px; line-height: 1.5; }
-        .log-entry { padding: 4px 0; border-bottom: 1px solid #2d2d2d; font-family: monospace; }
+        .log-content { max-height: 350px; overflow-y: auto; padding: 8px 12px; font-size: 11px; line-height: 1.5; }
+        .log-entry { padding: 4px 0; border-bottom: 1px solid #2d2d2d; font-family: monospace; word-break: break-all; }
         .log-entry.info { color: #9cdcfe; }
         .log-entry.success { color: #6a9955; }
         .log-entry.error { color: #f48771; }
@@ -65,18 +65,18 @@
         
         /* Token 检测模态框 */
         .token-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; }
-        .token-modal-content { background: white; border-radius: 16px; padding: 24px; width: 90%; max-width: 450px; box-shadow: 0 20px 35px rgba(0,0,0,0.2); }
+        .token-modal-content { background: white; border-radius: 16px; padding: 24px; width: 90%; max-width: 500px; box-shadow: 0 20px 35px rgba(0,0,0,0.2); }
         .token-modal h3 { margin-bottom: 16px; color: #3e2c21; }
         .token-modal input { width: 100%; padding: 12px; border: 1px solid #e4d9ce; border-radius: 8px; font-size: 14px; font-family: monospace; margin-bottom: 12px; }
-        .token-modal textarea { width: 100%; padding: 12px; border: 1px solid #e4d9ce; border-radius: 8px; font-size: 12px; font-family: monospace; margin-bottom: 12px; resize: vertical; background: #f8f8f8; }
-        .token-modal-buttons { display: flex; gap: 12px; justify-content: flex-end; }
+        .token-modal-buttons { display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px; }
         .token-modal button { padding: 8px 20px; border-radius: 40px; font-weight: 600; cursor: pointer; }
         .btn-primary { background: #2c2a29; color: white; border: none; }
         .btn-secondary { background: #f0eae2; color: #5a3f28; border: none; }
-        .test-status { margin: 12px 0; padding: 8px; border-radius: 8px; font-size: 12px; }
+        .test-status { margin: 12px 0; padding: 10px; border-radius: 8px; font-size: 12px; }
         .test-status.success { background: #e8f5e9; color: #2e7d32; }
         .test-status.error { background: #ffebee; color: #c62828; }
         .test-status.loading { background: #fff3e0; color: #ef6c00; }
+        .proxy-warning { background: #fff3e0; padding: 10px; border-radius: 8px; margin-bottom: 12px; font-size: 12px; color: #e67e22; }
     </style>
 </head>
 <body>
@@ -101,6 +101,38 @@
         branch: 'main'
     };
     // ==================================================
+    
+    // 使用 CORS 代理（免费、公开的代理服务）
+    // 注意：这些代理服务是公开的，可能会有速率限制，但足够个人使用
+    const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+    const CORS_PROXY_POST = 'https://corsproxy.io/?';
+    
+    // 判断是否使用代理（默认启用代理解决 CORS 问题）
+    let useProxy = true;
+    
+    // 尝试直接请求，如果失败则使用代理
+    async function fetchWithProxy(url, options = {}) {
+        const isGet = options.method !== 'PUT' && options.method !== 'POST';
+        
+        if (isGet && useProxy) {
+            // GET 请求使用代理
+            const proxyUrl = `${CORS_PROXY}${encodeURIComponent(url)}`;
+            addLog(`使用代理获取: ${url.substring(0, 80)}...`, 'info');
+            const res = await fetch(proxyUrl, {
+                method: 'GET',
+                headers: {
+                    'Cache-Control': 'no-cache'
+                }
+            });
+            return res;
+        } else if (!isGet && useProxy) {
+            // POST/PUT 请求 - GitHub API 的写入操作需要认证，代理可能不支持，尝试直接请求
+            addLog(`尝试直接请求 (写入操作): ${url.substring(0, 80)}...`, 'info');
+            return await fetch(url, options);
+        } else {
+            return await fetch(url, options);
+        }
+    }
 
     const ADMIN_PASSWORD = "lxhzj";
     let editMode = false;
@@ -129,6 +161,7 @@
                     <span>${escapeHtml(log.message)}</span>
                 </div>
             `).join('') || '<div style="color:#666; text-align:center; padding:20px;">暂无日志</div>';
+            content.scrollTop = 0;
         }
     }
 
@@ -167,7 +200,8 @@
     async function testGitHubToken(token) {
         addLog('正在验证 GitHub Token...', 'info');
         try {
-            const res = await fetch('https://api.github.com/user', {
+            const url = 'https://api.github.com/user';
+            const res = await fetch(url, {
                 headers: {
                     'Authorization': `token ${token}`,
                     'Accept': 'application/vnd.github.v3+json'
@@ -176,7 +210,7 @@
             if (res.ok) {
                 const user = await res.json();
                 addLog(`✅ Token 验证成功！用户名: ${user.login}`, 'success');
-                // 进一步测试仓库权限
+                // 测试仓库权限
                 const repoTest = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}`, {
                     headers: { 'Authorization': `token ${token}` }
                 });
@@ -201,7 +235,7 @@
         }
     }
 
-    // Token 输入模态框（带检测功能）
+    // Token 输入模态框
     async function showTokenInputModal() {
         return new Promise((resolve) => {
             const modal = document.createElement('div');
@@ -209,13 +243,15 @@
             modal.innerHTML = `
                 <div class="token-modal-content">
                     <h3>🔧 GitHub Personal Access Token</h3>
+                    <div class="proxy-warning">
+                        💡 提示：已启用 CORS 代理，如遇连接问题请检查网络或刷新重试
+                    </div>
                     <p style="font-size:12px; color:#666; margin-bottom:12px;">
                         需要 <strong>repo</strong> 权限。获取地址: 
                         <a href="https://github.com/settings/tokens" target="_blank" style="color:#c7a66b;">github.com/settings/tokens</a>
                     </p>
                     <input type="password" id="tokenInput" placeholder="粘贴你的 GitHub Token" autocomplete="off">
                     <div id="testStatus" class="test-status" style="display:none;"></div>
-                    <textarea id="tokenHelp" rows="3" placeholder="或者粘贴 Token 在这里（会自动去除空格和换行）" style="display:none;"></textarea>
                     <div class="token-modal-buttons">
                         <button id="testTokenBtn" class="btn-secondary">🔍 检测 Token</button>
                         <button id="cancelTokenBtn" class="btn-secondary">取消</button>
@@ -230,14 +266,13 @@
             const testBtn = modal.querySelector('#testTokenBtn');
             const confirmBtn = modal.querySelector('#confirmTokenBtn');
             const cancelBtn = modal.querySelector('#cancelTokenBtn');
-            let lastTestResult = null;
+            let lastTestValid = false;
             
             const updateTestStatus = (status, message, type) => {
                 testStatus.style.display = 'block';
                 testStatus.className = `test-status ${type}`;
                 testStatus.innerHTML = message;
-                if (status === 'success') lastTestResult = true;
-                else if (status === 'error') lastTestResult = false;
+                lastTestValid = (status === 'success');
             };
             
             testBtn.onclick = async () => {
@@ -249,7 +284,7 @@
                 updateTestStatus('loading', '⏳ 正在检测中...', 'loading');
                 const result = await testGitHubToken(token);
                 if (result.valid) {
-                    updateTestStatus('success', `✅ Token 有效！用户: ${result.user}${result.repoWarning ? '\n⚠️ 仓库访问可能有问题，请确认仓库存在' : ''}`, 'success');
+                    updateTestStatus('success', `✅ Token 有效！用户: ${result.user}${result.repoWarning ? '<br>⚠️ 仓库访问可能有问题，请确认仓库存在' : ''}`, 'success');
                 } else {
                     updateTestStatus('error', `❌ Token 无效: ${result.error}`, 'error');
                 }
@@ -258,7 +293,13 @@
             confirmBtn.onclick = () => {
                 const token = input.value.trim();
                 if (token) {
-                    resolve(token);
+                    if (lastTestValid) {
+                        resolve(token);
+                    } else {
+                        if (confirm("Token 未检测，是否继续使用？")) {
+                            resolve(token);
+                        }
+                    }
                 } else {
                     updateTestStatus('error', '❌ 请输入 Token', 'error');
                 }
@@ -323,20 +364,21 @@
         const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}?ref=${GITHUB_CONFIG.branch}&_=${Date.now()}`;
         addLog(`获取文件: ${GITHUB_CONFIG.path}`, 'info');
         try {
+            // 直接请求（GET 请求 GitHub API 支持 CORS）
             const res = await fetch(url, {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/vnd.github.v3+json',
                     'Cache-Control': 'no-cache, no-store, must-revalidate'
-                },
-                mode: 'cors',
-                credentials: 'omit'
+                }
             });
             if (res.status === 404) {
                 addLog(`文件不存在: ${GITHUB_CONFIG.path}`, 'warning');
                 return null;
             }
-            if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
             const data = await res.json();
             addLog(`✅ 文件获取成功，SHA: ${data.sha.substring(0, 7)}...`, 'success');
             return { sha: data.sha, content: data.content };
@@ -365,7 +407,7 @@
                 blogData = { ...DEFAULT_DATA };
             }
         } catch (err) {
-            addLog(`❌ 加载失败: ${err.message}`, 'error');
+            addLog(`❌ 加载失败: ${err.message}，使用默认数据`, 'error');
             blogData = { ...DEFAULT_DATA };
         }
         renderFullBlog();
@@ -392,6 +434,7 @@
                 branch: GITHUB_CONFIG.branch
             };
             if (sha) body.sha = sha;
+            
             const res = await fetch(url, {
                 method: 'PUT',
                 headers: {
@@ -400,10 +443,9 @@
                     'Content-Type': 'application/json',
                     'Cache-Control': 'no-cache'
                 },
-                body: JSON.stringify(body),
-                mode: 'cors',
-                credentials: 'omit'
+                body: JSON.stringify(body)
             });
+            
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
                 try {
@@ -673,6 +715,7 @@
     async function init() {
         addLog('博客初始化开始', 'info');
         addLog(`GitHub 仓库: ${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}`, 'info');
+        addLog('使用 GitHub API 直连（支持 CORS）', 'info');
         await loadFromGitHub();
         const btn = document.getElementById('masterControlBtn');
         if (btn) {
