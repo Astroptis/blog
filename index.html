@@ -96,6 +96,14 @@
             font-size: 1.1rem;
         }
         
+        /* Giscus iframe 样式 */
+        .giscus-iframe {
+            width: 100%;
+            min-height: 300px;
+            border: none;
+            background: transparent;
+        }
+        
         .blog-header { 
             text-align: center; 
             margin-bottom: 2.5rem; 
@@ -154,7 +162,6 @@
         .article-action-btn.delete { background: rgba(241, 222, 214, 0.85); color: #b55a3c; }
         .bili-tip { font-size: 0.7rem; color: #b48c5c; text-align: center; margin-top: 0.5rem; }
         .video-intro { font-size: 0.9rem; color: #6b5a4a; margin-bottom: 0.8rem; padding: 0.5rem; background: rgba(249, 244, 238, 0.6); backdrop-filter: blur(4px); border-radius: 0.75rem; text-align: center; }
-        .giscus { margin-top: 0.5rem; width: 100%; }
         
         /* 底部毛玻璃效果 */
         footer { 
@@ -179,13 +186,9 @@
         
         /* 背景设置按钮样式 */
         .bg-setting-btn { background: rgba(127, 94, 60, 0.85); backdrop-filter: blur(4px); padding: 0.4rem 1rem; font-size: 0.8rem; border-radius: 60px; color: white; cursor: pointer; border: none; font-weight: 500; }
-        
-        /* Giscus 评论区背景透明 */
-        .giscus-frame, .giscus { background: transparent !important; }
     </style>
 </head>
 <body>
-<!-- 外层毛玻璃覆盖层 -->
 <div class="glass-overlay">
     <div class="blog-wrapper">
         <div class="admin-bar" id="adminBar">
@@ -194,7 +197,7 @@
         <div class="blog-content" id="blogRoot">
             <div class="loading">加载中...</div>
         </div>
-        <footer>© Astroptis · 数据存储于 GitHub 仓库 | 每篇文章独立评论区</footer>
+        <footer>© Astroptis · 数据存储于 GitHub 仓库 </footer>
     </div>
 </div>
 
@@ -206,7 +209,9 @@
         path: 'data.json',
         branch: 'main'
     };
+    
     // ==================== Giscus 配置 ====================
+    // 注意：请将以下配置替换为您在 https://giscus.app 获取的真实值
     const GISCUS_CONFIG = {
         repo: 'Astroptis/blog',
         repoId: 'R_kgDORzSJcQ',
@@ -255,7 +260,6 @@
         }
     }
 
-    // 安全的 Base64 解码（支持 UTF-8）
     function base64Decode(str) {
         try {
             return decodeURIComponent(escape(atob(str)));
@@ -361,7 +365,7 @@
             if (m === '<') return '&lt;';
             if (m === '>') return '&gt;';
             return m;
-        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) { return c; });
+        });
     }
 
     function convertToBilibiliEmbed(input) {
@@ -528,33 +532,43 @@
         }
     }
 
-    // 为单篇文章加载 Giscus 评论区
+    // 通过 iframe 方式为每篇文章加载独立评论区（解决多评论问题）
     function loadArticleComments(containerId, articleId) {
         const container = document.getElementById(containerId);
         if (!container) return;
         
-        // 清空容器，避免重复加载
+        // 清空容器
         container.innerHTML = '';
         
-        // 创建新的 script 元素
-        const script = document.createElement('script');
-        script.src = 'https://giscus.app/client.js';
-        script.setAttribute('data-repo', GISCUS_CONFIG.repo);
-        script.setAttribute('data-repo-id', GISCUS_CONFIG.repoId);
-        script.setAttribute('data-category', GISCUS_CONFIG.category);
-        script.setAttribute('data-category-id', GISCUS_CONFIG.categoryId);
-        script.setAttribute('data-mapping', 'specific');
-        // 使用文章 ID 作为唯一标识，确保每篇文章有独立评论区
-        script.setAttribute('data-term', `article_${articleId}`);
-        script.setAttribute('data-reactions-enabled', GISCUS_CONFIG.reactionsEnabled);
-        script.setAttribute('data-emit-metadata', GISCUS_CONFIG.emitMetadata);
-        script.setAttribute('data-input-position', GISCUS_CONFIG.inputPosition);
-        script.setAttribute('data-theme', GISCUS_CONFIG.theme);
-        script.setAttribute('data-lang', GISCUS_CONFIG.lang);
-        script.setAttribute('crossorigin', 'anonymous');
-        script.async = true;
+        // 构建 Giscus iframe URL
+        const params = new URLSearchParams({
+            repo: GISCUS_CONFIG.repo,
+            repo_id: GISCUS_CONFIG.repoId,
+            category: GISCUS_CONFIG.category,
+            category_id: GISCUS_CONFIG.categoryId,
+            term: `article_${articleId}`,
+            reactions_enabled: GISCUS_CONFIG.reactionsEnabled,
+            emit_metadata: GISCUS_CONFIG.emitMetadata,
+            input_position: GISCUS_CONFIG.inputPosition,
+            theme: GISCUS_CONFIG.theme,
+            lang: GISCUS_CONFIG.lang,
+            strict: '0'
+        });
         
-        container.appendChild(script);
+        const iframeUrl = `https://giscus.app/widget?${params.toString()}`;
+        
+        // 创建 iframe
+        const iframe = document.createElement('iframe');
+        iframe.src = iframeUrl;
+        iframe.className = 'giscus-iframe';
+        iframe.style.width = '100%';
+        iframe.style.minHeight = '320px';
+        iframe.style.border = 'none';
+        iframe.style.background = 'transparent';
+        iframe.setAttribute('title', 'Comments');
+        iframe.setAttribute('loading', 'lazy');
+        
+        container.appendChild(iframe);
     }
 
     function renderFullBlog() {
@@ -617,7 +631,7 @@
                         ${editMode ? `<div class="article-actions"><button class="article-action-btn edit-article" data-id="${article.id}">✏️ 编辑</button><button class="article-action-btn delete" data-id="${article.id}">🗑️ 删除</button></div>` : ''}
                         <div class="article-comments">
                             <div class="comments-title">💬 讨论区</div>
-                            <div id="${commentContainerId}" class="giscus"></div>
+                            <div id="${commentContainerId}" class="giscus-container"></div>
                         </div>
                     </div>
                 `;
@@ -671,7 +685,7 @@
         const videoContainer = document.getElementById('biliVideoContainer');
         if (videoContainer) videoContainer.innerHTML = getVideoEmbedCode();
 
-        // 为每篇文章加载独立的评论区（延迟执行确保 DOM 已渲染）
+        // 为每篇文章加载独立的评论区（使用 iframe 方式）
         setTimeout(() => {
             if (blogData.articles && blogData.articles.length) {
                 blogData.articles.forEach(article => {
