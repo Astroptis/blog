@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Astroptis | GitHub 云存储博客</title>
+    <title>Astroptis | GitHub 云存储个人网站</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #f5f3ef; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; color: #2c2a29; line-height: 1.5; padding: 2rem 1rem; }
@@ -41,11 +41,13 @@
         .article-action-btn { background: #f0eae2; border: none; padding: 0.3rem 1rem; border-radius: 2rem; font-size: 0.7rem; cursor: pointer; color: #5a3f28; }
         .article-action-btn.delete { background: #f1ded6; color: #b55a3c; }
         .bili-tip { font-size: 0.7rem; color: #b48c5c; text-align: center; margin-top: 0.5rem; }
+        .giscus { margin-top: 1rem; }
         footer { text-align: center; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #f0eae2; font-size: 0.8rem; color: #aa9b8c; }
         @media (max-width: 680px) { .blog-content { padding: 1.5rem; } .blog-title { font-size: 2rem; } }
         button { background: none; border: none; }
         .loading { text-align: center; padding: 3rem; color: #aa9b8c; }
     </style>
+    <!-- Giscus 脚本稍后动态加载，防止影响初始渲染 -->
 </head>
 <body>
 <div class="blog-wrapper">
@@ -55,7 +57,7 @@
     <div class="blog-content" id="blogRoot">
         <div class="loading">加载中...</div>
     </div>
-    <footer>© Astroptis ·  GitHub 存储个人网站</footer>
+    <footer>© Astroptis · 数据存储于 GitHub 仓库 | 留言板由 Giscus 提供</footer>
 </div>
 
 <script>
@@ -65,6 +67,20 @@
         repo: 'blog',
         path: 'data.json',
         branch: 'main'
+    };
+    // ==================== Giscus 配置（请根据您的实际情况替换） ====================
+    // 在 https://giscus.app/zh-CN 生成配置，复制以下参数替换
+    const GISCUS_CONFIG = {
+        repo: 'tianlu464/blog',           // 您的仓库，格式：用户名/仓库名
+        repoId: 'R_kgDORzSJcQ',           // 您的仓库 ID（在 Giscus 配置页面获取）
+        category: 'Announcements',        // 分类名称
+        categoryId: 'DIC_kwDORzSJcc4C5hnP', // 分类 ID
+        mapping: 'pathname',              // 页面与 discussion 的映射方式
+        reactionsEnabled: '1',            // 开启表情反应
+        emitMetadata: '0',
+        inputPosition: 'top',             // 输入框位置
+        theme: 'light',                   // 主题，可跟随系统
+        lang: 'zh-CN'
     };
     // ==================================================
 
@@ -145,7 +161,6 @@
             body: JSON.stringify(body)
         });
         if (res.status === 401) {
-            // Token 无效，清除本地存储并提示重新输入
             localStorage.removeItem(TOKEN_STORAGE_KEY);
             throw new Error("GitHub Token 无效或已过期，请重新输入");
         }
@@ -165,15 +180,13 @@
             console.error(err);
             showToast("❌ 保存失败：" + err.message, "#b55a3c");
             if (err.message.includes("Token 无效")) {
-                // 提示用户重新输入 Token
                 const newToken = prompt("Token 无效，请重新输入 GitHub Personal Access Token:", "");
                 if (newToken) {
                     localStorage.setItem(TOKEN_STORAGE_KEY, newToken);
                     githubToken = newToken;
-                    // 重试保存
                     await saveAllData();
                 } else {
-                    disableEditMode(); // 退出编辑模式
+                    disableEditMode();
                 }
             }
             throw err;
@@ -198,7 +211,6 @@
         }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) { return c; });
     }
 
-    // B站视频转换
     function convertToBilibiliEmbed(input) {
         if (!input) return null;
         let match;
@@ -316,7 +328,6 @@
         if (newVal !== null && newVal !== current) updateField(fieldKey, newVal);
     }
 
-    // 更换 Token 按钮处理
     function updateToken() {
         const newToken = prompt("请输入新的 GitHub Personal Access Token（留空则清除存储）:", "");
         if (newToken === null) return;
@@ -324,21 +335,36 @@
             localStorage.removeItem(TOKEN_STORAGE_KEY);
             githubToken = null;
             showToast("已清除存储的 Token", "#a18a6e");
-            if (editMode) {
-                disableEditMode();
-            }
+            if (editMode) disableEditMode();
         } else {
             localStorage.setItem(TOKEN_STORAGE_KEY, newToken);
             githubToken = newToken;
             showToast("Token 已更新并存储", "#2c2a29");
-            // 如果当前在编辑模式，保持编辑状态
-            if (editMode) {
-                // 重新保存一次以测试 token 有效性
-                saveAllData().catch(() => {
-                    // 如果 token 无效，会提示并可能退出
-                });
-            }
+            if (editMode) saveAllData().catch(() => {});
         }
+    }
+
+    // 加载 Giscus 脚本（在留言板容器渲染后调用）
+    function loadGiscus() {
+        const container = document.getElementById('giscusContainer');
+        if (!container) return;
+        // 避免重复加载
+        if (container.querySelector('script')) return;
+        const script = document.createElement('script');
+        script.src = 'https://giscus.app/client.js';
+        script.setAttribute('data-repo', GISCUS_CONFIG.repo);
+        script.setAttribute('data-repo-id', GISCUS_CONFIG.repoId);
+        script.setAttribute('data-category', GISCUS_CONFIG.category);
+        script.setAttribute('data-category-id', GISCUS_CONFIG.categoryId);
+        script.setAttribute('data-mapping', GISCUS_CONFIG.mapping);
+        script.setAttribute('data-reactions-enabled', GISCUS_CONFIG.reactionsEnabled);
+        script.setAttribute('data-emit-metadata', GISCUS_CONFIG.emitMetadata);
+        script.setAttribute('data-input-position', GISCUS_CONFIG.inputPosition);
+        script.setAttribute('data-theme', GISCUS_CONFIG.theme);
+        script.setAttribute('data-lang', GISCUS_CONFIG.lang);
+        script.setAttribute('crossorigin', 'anonymous');
+        script.async = true;
+        container.appendChild(script);
     }
 
     function renderFullBlog() {
@@ -364,7 +390,6 @@
             badge.style.display = editMode ? "inline-block" : "none";
         }
 
-        // 管理栏额外按钮（仅在编辑模式下显示“更换 Token”）
         let tokenBtn = document.getElementById('tokenChangeBtn');
         if (editMode && !tokenBtn && document.getElementById('adminBar')) {
             tokenBtn = document.createElement('button');
@@ -423,12 +448,23 @@
                 <div class="card relative-edit"><h2 class="section-title">❤️ 个人喜好</h2><div class="hobbies-list">${hobbiesHtml}</div>${editMode ? `<div class="edit-icon" data-edit-field="hobbies" data-label="喜好列表(逗号分隔)">✎ 编辑喜好</div>` : ''}</div>
             </div>
             <div class="grid-layout"><div class="card full-width relative-edit"><h2 class="section-title">🎬 哔哩哔哩 · 影像诗</h2><div class="video-container" id="biliVideoContainer"></div><div class="bili-tip">💡 管理员登录后点击右上角铅笔更换 B站视频</div>${editMode ? `<div class="edit-icon" data-edit-field="videoEmbed" data-label="哔哩哔哩视频">✎ 更换B站视频</div>` : ''}</div></div>
+            <!-- 留言板模块 -->
+            <div class="grid-layout">
+                <div class="card full-width">
+                    <h2 class="section-title">💬 留言板</h2>
+                    <div id="giscusContainer" class="giscus"></div>
+                    <div style="font-size:0.7rem; color:#aa947c; text-align:center; margin-top:0.8rem;">✨ 使用 GitHub 账号登录即可留言，所有评论将存储于仓库的 Discussions 中</div>
+                </div>
+            </div>
         `;
 
         container.innerHTML = html;
 
         const videoContainer = document.getElementById('biliVideoContainer');
         if (videoContainer) videoContainer.innerHTML = getVideoEmbedCode();
+
+        // 加载 Giscus（在 DOM 更新后）
+        loadGiscus();
 
         if (editMode) {
             document.querySelectorAll('.edit-icon').forEach(icon => {
@@ -446,18 +482,13 @@
     function enableEditMode() {
         const pwd = prompt("🔑 管理员密码：", "");
         if (pwd !== ADMIN_PASSWORD) { alert("密码错误"); return false; }
-
-        // 尝试从 localStorage 读取 Token
         let storedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
         if (storedToken) {
             githubToken = storedToken;
             editMode = true;
             renderFullBlog();
             showToast("✅ 已使用存储的 Token 进入编辑模式", "#2c2a29");
-            // 测试 Token 有效性（可选）
-            saveAllData().catch(() => {
-                // 如果 Token 无效，会提示并可能退出
-            });
+            saveAllData().catch(() => {});
             return true;
         } else {
             const token = prompt("🔧 请输入 GitHub Personal Access Token (需 repo 权限)\n获取地址: https://github.com/settings/tokens", "");
@@ -473,7 +504,6 @@
 
     function disableEditMode() {
         editMode = false;
-        // 注意：不清除 localStorage 中的 Token，保留以便下次使用
         githubToken = null;
         renderFullBlog();
         showToast("🔒 已退出编辑模式", "#a18a6e");
