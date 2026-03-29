@@ -21,7 +21,7 @@
             min-height: 100vh;
         }
         
-        /* 外层毛玻璃覆盖层 - 更高通透度 */
+        /* 外层毛玻璃覆盖层 */
         .glass-overlay {
             min-height: 100vh;
             padding: 2rem 1rem;
@@ -29,7 +29,7 @@
             backdrop-filter: blur(12px);
         }
         
-        /* 博客主容器 - 更高通透度 */
+        /* 博客主容器 */
         .blog-wrapper { 
             max-width: 1200px; 
             margin: 0 auto; 
@@ -43,7 +43,7 @@
         
         .blog-content { padding: 2rem 2rem 2.5rem; }
         
-        /* 半透明卡片 - 更高通透度 */
+        /* 半透明卡片 */
         .card { 
             background: rgba(254, 252, 248, 0.55); 
             backdrop-filter: blur(16px);
@@ -94,14 +94,6 @@
         .comments-title::before {
             content: "💬";
             font-size: 1.1rem;
-        }
-        
-        /* Giscus iframe 样式 */
-        .giscus-iframe {
-            width: 100%;
-            min-height: 300px;
-            border: none;
-            background: transparent;
         }
         
         .blog-header { 
@@ -163,7 +155,12 @@
         .bili-tip { font-size: 0.7rem; color: #b48c5c; text-align: center; margin-top: 0.5rem; }
         .video-intro { font-size: 0.9rem; color: #6b5a4a; margin-bottom: 0.8rem; padding: 0.5rem; background: rgba(249, 244, 238, 0.6); backdrop-filter: blur(4px); border-radius: 0.75rem; text-align: center; }
         
-        /* 底部毛玻璃效果 */
+        /* Giscus 评论区样式 */
+        .giscus-wrapper {
+            width: 100%;
+            min-height: 320px;
+        }
+        
         footer { 
             text-align: center; 
             margin-top: 2rem; 
@@ -184,7 +181,6 @@
         button { background: none; border: none; }
         .loading { text-align: center; padding: 3rem; color: #aa9b8c; }
         
-        /* 背景设置按钮样式 */
         .bg-setting-btn { background: rgba(127, 94, 60, 0.85); backdrop-filter: blur(4px); padding: 0.4rem 1rem; font-size: 0.8rem; border-radius: 60px; color: white; cursor: pointer; border: none; font-weight: 500; }
     </style>
 </head>
@@ -197,7 +193,7 @@
         <div class="blog-content" id="blogRoot">
             <div class="loading">加载中...</div>
         </div>
-        <footer>© Astroptis · 数据存储于 GitHub 仓库 </footer>
+        <footer>© Astroptis · 数据存储于 GitHub 仓库 | 每篇文章独立评论区</footer>
     </div>
 </div>
 
@@ -211,12 +207,13 @@
     };
     
     // ==================== Giscus 配置 ====================
-    // 注意：请将以下配置替换为您在 https://giscus.app 获取的真实值
+    // 重要：请将以下配置替换为您在 https://giscus.app 获取的真实值
     const GISCUS_CONFIG = {
-        repo: 'Astroptis/blog',
-        repoId: 'R_kgDORzSJcQ',
+        repo: 'tianlu464/blog',           // 修改为您的仓库
+        repoId: 'R_kgDORzSJcQ',           // 请在 giscus.app 获取正确的 repo-id
         category: 'Announcements',
-        categoryId: 'DIC_kwDORzSJcc4C5hnP',
+        categoryId: 'DIC_kwDORzSJcc4C5hnP', // 请在 giscus.app 获取正确的 category-id
+        mapping: 'specific',
         reactionsEnabled: '1',
         emitMetadata: '0',
         inputPosition: 'top',
@@ -246,6 +243,7 @@
     };
 
     let blogData = { ...DEFAULT_DATA };
+    let giscusLoaded = false;
 
     // 应用背景图片
     function applyBackground() {
@@ -532,43 +530,40 @@
         }
     }
 
-    // 通过 iframe 方式为每篇文章加载独立评论区（解决多评论问题）
-    function loadArticleComments(containerId, articleId) {
+    // 使用官方脚本方式加载 Giscus 评论区
+    function loadGiscusComments(containerId, articleId) {
         const container = document.getElementById(containerId);
         if (!container) return;
         
         // 清空容器
         container.innerHTML = '';
         
-        // 构建 Giscus iframe URL
-        const params = new URLSearchParams({
-            repo: GISCUS_CONFIG.repo,
-            repo_id: GISCUS_CONFIG.repoId,
-            category: GISCUS_CONFIG.category,
-            category_id: GISCUS_CONFIG.categoryId,
-            term: `article_${articleId}`,
-            reactions_enabled: GISCUS_CONFIG.reactionsEnabled,
-            emit_metadata: GISCUS_CONFIG.emitMetadata,
-            input_position: GISCUS_CONFIG.inputPosition,
-            theme: GISCUS_CONFIG.theme,
-            lang: GISCUS_CONFIG.lang,
-            strict: '0'
-        });
+        // 创建 giscus 脚本
+        const script = document.createElement('script');
+        script.src = 'https://giscus.app/client.js';
+        script.setAttribute('data-repo', GISCUS_CONFIG.repo);
+        script.setAttribute('data-repo-id', GISCUS_CONFIG.repoId);
+        script.setAttribute('data-category', GISCUS_CONFIG.category);
+        script.setAttribute('data-category-id', GISCUS_CONFIG.categoryId);
+        script.setAttribute('data-mapping', GISCUS_CONFIG.mapping);
+        script.setAttribute('data-term', `article_${articleId}`);
+        script.setAttribute('data-reactions-enabled', GISCUS_CONFIG.reactionsEnabled);
+        script.setAttribute('data-emit-metadata', GISCUS_CONFIG.emitMetadata);
+        script.setAttribute('data-input-position', GISCUS_CONFIG.inputPosition);
+        script.setAttribute('data-theme', GISCUS_CONFIG.theme);
+        script.setAttribute('data-lang', GISCUS_CONFIG.lang);
+        script.setAttribute('crossorigin', 'anonymous');
+        script.async = true;
         
-        const iframeUrl = `https://giscus.app/widget?${params.toString()}`;
+        // 添加加载完成后的处理
+        script.onload = () => {
+            console.log(`Giscus loaded for article ${articleId}`);
+        };
+        script.onerror = () => {
+            container.innerHTML = '<p style="color:#aa947c; text-align:center; padding:1rem;">⚠️ 评论区加载失败，请检查网络或 Giscus 配置</p>';
+        };
         
-        // 创建 iframe
-        const iframe = document.createElement('iframe');
-        iframe.src = iframeUrl;
-        iframe.className = 'giscus-iframe';
-        iframe.style.width = '100%';
-        iframe.style.minHeight = '320px';
-        iframe.style.border = 'none';
-        iframe.style.background = 'transparent';
-        iframe.setAttribute('title', 'Comments');
-        iframe.setAttribute('loading', 'lazy');
-        
-        container.appendChild(iframe);
+        container.appendChild(script);
     }
 
     function renderFullBlog() {
@@ -621,7 +616,7 @@
         let articlesHtml = '';
         if (blogData.articles && blogData.articles.length) {
             blogData.articles.forEach((article) => {
-                const commentContainerId = `comments-${article.id}`;
+                const commentContainerId = `giscus-${article.id}`;
                 articlesHtml += `
                     <div class="article-card relative-edit" data-article-id="${article.id}">
                         <div class="article-title">${escapeHtml(article.title)}</div>
@@ -631,7 +626,7 @@
                         ${editMode ? `<div class="article-actions"><button class="article-action-btn edit-article" data-id="${article.id}">✏️ 编辑</button><button class="article-action-btn delete" data-id="${article.id}">🗑️ 删除</button></div>` : ''}
                         <div class="article-comments">
                             <div class="comments-title">💬 讨论区</div>
-                            <div id="${commentContainerId}" class="giscus-container"></div>
+                            <div id="${commentContainerId}" class="giscus-wrapper"></div>
                         </div>
                     </div>
                 `;
@@ -685,15 +680,15 @@
         const videoContainer = document.getElementById('biliVideoContainer');
         if (videoContainer) videoContainer.innerHTML = getVideoEmbedCode();
 
-        // 为每篇文章加载独立的评论区（使用 iframe 方式）
+        // 为每篇文章加载独立的评论区（延迟执行确保 DOM 已渲染）
         setTimeout(() => {
             if (blogData.articles && blogData.articles.length) {
                 blogData.articles.forEach(article => {
-                    const commentContainerId = `comments-${article.id}`;
-                    loadArticleComments(commentContainerId, article.id);
+                    const commentContainerId = `giscus-${article.id}`;
+                    loadGiscusComments(commentContainerId, article.id);
                 });
             }
-        }, 100);
+        }, 200);
 
         if (editMode) {
             document.querySelectorAll('.edit-icon').forEach(icon => {
