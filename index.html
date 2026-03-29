@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Astroptis | GitHub云存储个人网站</title>
+    <title>Astroptis | GitHub 云存储博客</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #f5f3ef; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; color: #2c2a29; line-height: 1.5; padding: 2rem 1rem; }
@@ -30,8 +30,9 @@
         .article-body { white-space: pre-wrap; }
         .article-image { max-width: 100%; border-radius: 1rem; margin: 0.8rem 0; max-height: 240px; object-fit: cover; }
         .admin-bar { display: flex; justify-content: flex-end; padding: 1rem 2rem; background: #fefaf5; border-bottom: 1px solid #ede3d8; gap: 1rem; flex-wrap: wrap; align-items: center; }
-        .admin-btn { background: #2c2a29; border: none; padding: 0.6rem 1.5rem; border-radius: 60px; font-weight: 600; color: white; cursor: pointer; transition: all 0.2s; }
-        .admin-btn:hover { background: #4a3b2e; transform: scale(0.97); }
+        .admin-btn, .token-btn { background: #2c2a29; border: none; padding: 0.6rem 1.5rem; border-radius: 60px; font-weight: 600; color: white; cursor: pointer; transition: all 0.2s; font-family: inherit; font-size: 0.9rem; }
+        .admin-btn:hover, .token-btn:hover { background: #4a3b2e; transform: scale(0.97); }
+        .token-btn { background: #7f5e3c; padding: 0.4rem 1rem; font-size: 0.8rem; }
         .edit-mode-badge { font-size: 0.8rem; background: #f2e3d4; padding: 0.3rem 1rem; border-radius: 40px; color: #9b6f42; }
         .edit-icon { position: absolute; top: 0.8rem; right: 0.8rem; background: #fff; border-radius: 2rem; padding: 0.3rem 0.8rem; font-size: 0.7rem; font-weight: 600; color: #5e3a22; border: 1px solid #e1cfbc; cursor: pointer; z-index: 10; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
         .relative-edit { position: relative; }
@@ -54,7 +55,7 @@
     <div class="blog-content" id="blogRoot">
         <div class="loading">加载中...</div>
     </div>
-    <footer>© Astroptis · 数据存储于 GitHub 仓库</footer>
+    <footer>© Astroptis ·  GitHub 存储个人网站</footer>
 </div>
 
 <script>
@@ -70,8 +71,9 @@
     const ADMIN_PASSWORD = "lxhzj";
     let editMode = false;
     let githubToken = null;
+    const TOKEN_STORAGE_KEY = 'github_blog_token';
 
-    // 默认数据结构（添加了 hobbies 字段）
+    // 默认数据结构
     const DEFAULT_DATA = {
         blogTitle: "林间随笔",
         author: "林染秋",
@@ -81,7 +83,7 @@
         quoteAuthor: "安塞尔·亚当斯",
         videoEmbed: "BV1GJ411x7h7",
         skills: "摄影, 散文写作, 前端开发, 徒步, 茶道",
-        hobbies: "阅读, 旅行, 音乐, 电影, 咖啡, 骑行",  // 新增个人喜好模块
+        hobbies: "阅读, 旅行, 音乐, 电影, 咖啡, 骑行",
         articles: []
     };
 
@@ -113,7 +115,7 @@
                 const json = JSON.parse(decoded);
                 blogData = { ...DEFAULT_DATA, ...json };
                 if (!blogData.articles) blogData.articles = [];
-                if (!blogData.hobbies) blogData.hobbies = DEFAULT_DATA.hobbies; // 确保 hobbies 字段存在
+                if (!blogData.hobbies) blogData.hobbies = DEFAULT_DATA.hobbies;
             } else {
                 await saveToGitHub(DEFAULT_DATA);
                 blogData = { ...DEFAULT_DATA };
@@ -142,6 +144,11 @@
             headers: { 'Authorization': `Bearer ${githubToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
         });
+        if (res.status === 401) {
+            // Token 无效，清除本地存储并提示重新输入
+            localStorage.removeItem(TOKEN_STORAGE_KEY);
+            throw new Error("GitHub Token 无效或已过期，请重新输入");
+        }
         if (!res.ok) {
             const err = await res.json();
             throw new Error(`保存失败: ${err.message || res.status}`);
@@ -157,6 +164,18 @@
         } catch (err) {
             console.error(err);
             showToast("❌ 保存失败：" + err.message, "#b55a3c");
+            if (err.message.includes("Token 无效")) {
+                // 提示用户重新输入 Token
+                const newToken = prompt("Token 无效，请重新输入 GitHub Personal Access Token:", "");
+                if (newToken) {
+                    localStorage.setItem(TOKEN_STORAGE_KEY, newToken);
+                    githubToken = newToken;
+                    // 重试保存
+                    await saveAllData();
+                } else {
+                    disableEditMode(); // 退出编辑模式
+                }
+            }
             throw err;
         }
     }
@@ -169,7 +188,6 @@
         setTimeout(() => toast.remove(), 3000);
     }
 
-    // 严格转义 HTML
     function escapeHtml(str) {
         if (!str) return '';
         return String(str).replace(/[&<>]/g, function(m) {
@@ -240,7 +258,7 @@
         else if (fieldKey === 'quoteAuthor') blogData.quoteAuthor = newValue;
         else if (fieldKey === 'videoEmbed') blogData.videoEmbed = newValue;
         else if (fieldKey === 'skills') blogData.skills = newValue;
-        else if (fieldKey === 'hobbies') blogData.hobbies = newValue;  // 新增喜好模块更新
+        else if (fieldKey === 'hobbies') blogData.hobbies = newValue;
         else return;
         saveAllData().then(() => renderFullBlog());
     }
@@ -298,6 +316,31 @@
         if (newVal !== null && newVal !== current) updateField(fieldKey, newVal);
     }
 
+    // 更换 Token 按钮处理
+    function updateToken() {
+        const newToken = prompt("请输入新的 GitHub Personal Access Token（留空则清除存储）:", "");
+        if (newToken === null) return;
+        if (newToken.trim() === "") {
+            localStorage.removeItem(TOKEN_STORAGE_KEY);
+            githubToken = null;
+            showToast("已清除存储的 Token", "#a18a6e");
+            if (editMode) {
+                disableEditMode();
+            }
+        } else {
+            localStorage.setItem(TOKEN_STORAGE_KEY, newToken);
+            githubToken = newToken;
+            showToast("Token 已更新并存储", "#2c2a29");
+            // 如果当前在编辑模式，保持编辑状态
+            if (editMode) {
+                // 重新保存一次以测试 token 有效性
+                saveAllData().catch(() => {
+                    // 如果 token 无效，会提示并可能退出
+                });
+            }
+        }
+    }
+
     function renderFullBlog() {
         const container = document.getElementById('blogRoot');
         if (!container) return;
@@ -321,6 +364,19 @@
             badge.style.display = editMode ? "inline-block" : "none";
         }
 
+        // 管理栏额外按钮（仅在编辑模式下显示“更换 Token”）
+        let tokenBtn = document.getElementById('tokenChangeBtn');
+        if (editMode && !tokenBtn && document.getElementById('adminBar')) {
+            tokenBtn = document.createElement('button');
+            tokenBtn.id = 'tokenChangeBtn';
+            tokenBtn.className = 'token-btn';
+            tokenBtn.textContent = '🔑 更换 Token';
+            document.getElementById('adminBar').appendChild(tokenBtn);
+            tokenBtn.addEventListener('click', updateToken);
+        } else if (!editMode && tokenBtn) {
+            tokenBtn.remove();
+        }
+
         let articlesHtml = '';
         if (blogData.articles && blogData.articles.length) {
             blogData.articles.forEach(article => {
@@ -340,13 +396,11 @@
 
         const addBtnHtml = editMode ? `<div style="text-align:right; margin-bottom:1rem;"><button class="add-article-btn" id="addNewArticleBtn">➕ 添加新文章</button></div>` : '';
 
-        // 生成技能标签
         const skillsArray = blogData.skills ? blogData.skills.split(',').map(s => s.trim()).filter(s => s) : [];
         const skillsHtml = skillsArray.length > 0 
             ? skillsArray.map(s => `<span class="skill-tag">${escapeHtml(s)}</span>`).join('')
             : '<span style="color:#aa947c;">暂无技能</span>';
         
-        // 生成喜好标签
         const hobbiesArray = blogData.hobbies ? blogData.hobbies.split(',').map(h => h.trim()).filter(h => h) : [];
         const hobbiesHtml = hobbiesArray.length > 0 
             ? hobbiesArray.map(h => `<span class="hobby-tag">${escapeHtml(h)}</span>`).join('')
@@ -392,17 +446,34 @@
     function enableEditMode() {
         const pwd = prompt("🔑 管理员密码：", "");
         if (pwd !== ADMIN_PASSWORD) { alert("密码错误"); return false; }
-        const token = prompt("🔧 请输入 GitHub Personal Access Token (需 repo 权限)\n获取地址: https://github.com/settings/tokens", "");
-        if (!token) { alert("未提供令牌，无法保存数据"); return false; }
-        githubToken = token;
-        editMode = true;
-        renderFullBlog();
-        showToast("✅ 编辑模式已开启", "#2c2a29");
-        return true;
+
+        // 尝试从 localStorage 读取 Token
+        let storedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
+        if (storedToken) {
+            githubToken = storedToken;
+            editMode = true;
+            renderFullBlog();
+            showToast("✅ 已使用存储的 Token 进入编辑模式", "#2c2a29");
+            // 测试 Token 有效性（可选）
+            saveAllData().catch(() => {
+                // 如果 Token 无效，会提示并可能退出
+            });
+            return true;
+        } else {
+            const token = prompt("🔧 请输入 GitHub Personal Access Token (需 repo 权限)\n获取地址: https://github.com/settings/tokens", "");
+            if (!token) { alert("未提供令牌，无法保存数据"); return false; }
+            githubToken = token;
+            localStorage.setItem(TOKEN_STORAGE_KEY, token);
+            editMode = true;
+            renderFullBlog();
+            showToast("✅ 编辑模式已开启，Token 已保存", "#2c2a29");
+            return true;
+        }
     }
 
     function disableEditMode() {
         editMode = false;
+        // 注意：不清除 localStorage 中的 Token，保留以便下次使用
         githubToken = null;
         renderFullBlog();
         showToast("🔒 已退出编辑模式", "#a18a6e");
