@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Astroptis的GitHub 云存储个人网站</title>
+    <title>Astroptis | GitHub 云存储个人网站</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
-        /* 全局背景（支持动态更换） */
+        /* 全局背景（支持动态更换，固定不滚动） */
         body { 
             background: #f5f3ef; 
             font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; 
@@ -21,60 +21,88 @@
             min-height: 100vh;
         }
         
-        /* 外层毛玻璃容器 - 覆盖整个可视区域 */
+        /* 外层毛玻璃容器 */
         .glass-overlay {
             min-height: 100vh;
             padding: 2rem 1rem;
-            background: rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(8px);
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(6px);
         }
         
-        /* 博客主容器 - 增强毛玻璃效果 */
+        /* 博客主容器 */
         .blog-wrapper { 
             max-width: 1200px; 
             margin: 0 auto; 
-            background: rgba(255, 255, 255, 0.65); 
-            backdrop-filter: blur(16px);
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
             border-radius: 2rem; 
-            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.2); 
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.15); 
             overflow: hidden; 
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.5);
         }
         
         .blog-content { padding: 2rem 2rem 2.5rem; }
         
-        /* 半透明卡片 - 增强毛玻璃效果 */
+        /* 半透明卡片 */
         .card { 
-            background: rgba(254, 252, 248, 0.75); 
-            backdrop-filter: blur(12px);
+            background: rgba(254, 252, 248, 0.6);
+            backdrop-filter: blur(8px);
             border-radius: 1.5rem; 
             padding: 1.5rem; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08); 
-            border: 1px solid rgba(255, 255, 255, 0.5); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+            border: 1px solid rgba(255, 255, 255, 0.6); 
             position: relative; 
             transition: all 0.2s; 
         }
         .card:hover { 
-            border-color: rgba(255, 255, 255, 0.8); 
-            background: rgba(254, 252, 248, 0.88);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.12); 
+            border-color: rgba(255, 255, 255, 0.85); 
+            background: rgba(254, 252, 248, 0.75);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1); 
         }
         
-        /* 文章卡片独立样式增强 */
+        /* 文章卡片样式 - 置顶文章特殊样式 */
         .article-card { 
-            background: rgba(254, 252, 248, 0.75); 
-            backdrop-filter: blur(12px);
+            background: rgba(254, 252, 248, 0.6); 
+            backdrop-filter: blur(8px);
             border-radius: 1.5rem; 
             padding: 1.5rem; 
             margin-bottom: 1.5rem; 
-            border: 1px solid rgba(255, 255, 255, 0.5); 
+            border: 1px solid rgba(255, 255, 255, 0.6); 
             position: relative; 
             transition: all 0.2s;
         }
         .article-card:hover {
-            background: rgba(254, 252, 248, 0.88);
-            border-color: rgba(255, 255, 255, 0.8);
+            background: rgba(254, 252, 248, 0.75);
+            border-color: rgba(255, 255, 255, 0.85);
         }
+        .article-card.pinned {
+            border-left: 4px solid #c7a66b;
+            background: rgba(254, 248, 240, 0.7);
+        }
+        .article-title { 
+            font-size: 1.5rem; 
+            font-weight: 600; 
+            color: #3b2e24; 
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .pinned-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.2rem;
+            background: #c7a66b;
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        .article-date { font-size: 0.75rem; color: #aa947c; margin-bottom: 0.8rem; }
+        .article-body { white-space: pre-wrap; }
+        .article-image { max-width: 100%; border-radius: 1rem; margin: 0.8rem 0; max-height: 240px; object-fit: cover; }
         
         .blog-header { 
             text-align: center; 
@@ -82,6 +110,7 @@
             padding-bottom: 1.5rem; 
             border-bottom: 2px solid rgba(240, 234, 226, 0.8); 
             position: relative; 
+            cursor: pointer;
         }
         .blog-title { 
             font-size: 2.8rem; 
@@ -91,52 +120,46 @@
             -webkit-background-clip: text; 
             color: transparent; 
             margin-bottom: 0.5rem; 
-            text-shadow: 0 1px 2px rgba(255,255,255,0.5);
+            text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+            transition: all 0.2s;
         }
+        .blog-title:hover { transform: scale(1.02); }
         .blog-author { font-size: 1.1rem; color: #5a4a3a; font-weight: 500; }
+        .click-hint {
+            font-size: 0.7rem;
+            color: #aa947c;
+            margin-top: 0.5rem;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        .blog-header:hover .click-hint { opacity: 1; }
         
         .grid-layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; margin-bottom: 2rem; }
         .full-width { grid-column: 1 / -1; }
         .section-title { font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem; color: #3e2c21; border-left: 5px solid #c7a66b; padding-left: 0.8rem; }
-        .featured-img { width: 100%; border-radius: 1rem; object-fit: cover; max-height: 280px; margin: 0.5rem 0; border: 1px solid rgba(255,255,255,0.6); }
+        .featured-img { width: 100%; border-radius: 1rem; object-fit: cover; max-height: 280px; margin: 0.5rem 0; border: 1px solid rgba(255,255,255,0.7); }
         .quote-text { font-size: 1.3rem; font-style: italic; color: #4a3b2e; padding: 0.8rem 0; }
         .quote-author { margin-top: 0.8rem; text-align: right; font-weight: 500; color: #b48c5c; }
-        .video-container { border-radius: 1rem; overflow: hidden; background: rgba(0,0,0,0.2); margin: 0.5rem 0; position: relative; padding-bottom: 56.25%; height: 0; }
+        .video-container { border-radius: 1rem; overflow: hidden; background: rgba(0,0,0,0.15); margin: 0.5rem 0; position: relative; padding-bottom: 56.25%; height: 0; }
         .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; border-radius: 0.75rem; }
         .skills-list, .hobbies-list { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 0.8rem; }
-        .skill-tag, .hobby-tag { background: rgba(233, 224, 214, 0.9); backdrop-filter: blur(4px); padding: 0.3rem 1rem; border-radius: 40px; font-size: 0.85rem; color: #5a3f28; }
-        .article-title { font-size: 1.5rem; font-weight: 600; color: #3b2e24; margin-bottom: 0.5rem; }
-        .article-date { font-size: 0.75rem; color: #aa947c; margin-bottom: 0.8rem; }
-        .article-body { white-space: pre-wrap; }
-        .article-image { max-width: 100%; border-radius: 1rem; margin: 0.8rem 0; max-height: 240px; object-fit: cover; }
+        .skill-tag, .hobby-tag { background: rgba(233, 224, 214, 0.85); backdrop-filter: blur(4px); padding: 0.3rem 1rem; border-radius: 40px; font-size: 0.85rem; color: #5a3f28; }
         
-        /* 管理栏毛玻璃效果增强 */
-        .admin-bar { 
-            display: flex; 
-            justify-content: flex-end; 
-            padding: 1rem 2rem; 
-            background: rgba(254, 250, 245, 0.75); 
-            backdrop-filter: blur(16px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.6); 
-            gap: 1rem; 
-            flex-wrap: wrap; 
-            align-items: center; 
-        }
-        .admin-btn, .token-btn { background: rgba(44, 42, 41, 0.9); backdrop-filter: blur(4px); border: none; padding: 0.6rem 1.5rem; border-radius: 60px; font-weight: 600; color: white; cursor: pointer; transition: all 0.2s; font-family: inherit; font-size: 0.9rem; }
-        .admin-btn:hover, .token-btn:hover { background: #4a3b2e; transform: scale(0.97); }
-        .token-btn { background: rgba(127, 94, 60, 0.9); padding: 0.4rem 1rem; font-size: 0.8rem; }
-        .edit-mode-badge { font-size: 0.8rem; background: rgba(242, 227, 212, 0.9); backdrop-filter: blur(4px); padding: 0.3rem 1rem; border-radius: 40px; color: #9b6f42; }
-        .edit-icon { position: absolute; top: 0.8rem; right: 0.8rem; background: rgba(255,255,255,0.9); backdrop-filter: blur(8px); border-radius: 2rem; padding: 0.3rem 0.8rem; font-size: 0.7rem; font-weight: 600; color: #5e3a22; border: 1px solid rgba(225, 207, 188, 0.8); cursor: pointer; z-index: 10; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+        /* 编辑图标样式 */
+        .edit-icon { position: absolute; top: 0.8rem; right: 0.8rem; background: rgba(255,255,255,0.85); backdrop-filter: blur(8px); border-radius: 2rem; padding: 0.3rem 0.8rem; font-size: 0.7rem; font-weight: 600; color: #5e3a22; border: 1px solid rgba(225, 207, 188, 0.8); cursor: pointer; z-index: 10; box-shadow: 0 1px 4px rgba(0,0,0,0.1); transition: all 0.2s; }
+        .edit-icon:hover { background: rgba(255,255,255,0.95); transform: scale(1.02); }
         .relative-edit { position: relative; }
         .add-article-btn { background: #c7a66b; color: white; border: none; padding: 0.5rem 1.2rem; border-radius: 2rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; margin-bottom: 1rem; display: inline-block; }
-        .article-actions { margin-top: 1rem; display: flex; gap: 0.8rem; justify-content: flex-end; }
-        .article-action-btn { background: rgba(240, 234, 226, 0.9); backdrop-filter: blur(4px); border: none; padding: 0.3rem 1rem; border-radius: 2rem; font-size: 0.7rem; cursor: pointer; color: #5a3f28; }
-        .article-action-btn.delete { background: rgba(241, 222, 214, 0.9); color: #b55a3c; }
+        .article-actions { margin-top: 1rem; display: flex; gap: 0.8rem; justify-content: flex-end; flex-wrap: wrap; }
+        .article-action-btn { background: rgba(240, 234, 226, 0.85); backdrop-filter: blur(4px); border: none; padding: 0.3rem 1rem; border-radius: 2rem; font-size: 0.7rem; cursor: pointer; color: #5a3f28; transition: all 0.2s; }
+        .article-action-btn:hover { transform: scale(0.98); }
+        .article-action-btn.pin { background: rgba(199, 166, 107, 0.85); color: white; }
+        .article-action-btn.unpin { background: rgba(170, 150, 120, 0.85); color: white; }
+        .article-action-btn.delete { background: rgba(241, 222, 214, 0.85); color: #b55a3c; }
         .bili-tip { font-size: 0.7rem; color: #b48c5c; text-align: center; margin-top: 0.5rem; }
-        .video-intro { font-size: 0.9rem; color: #6b5a4a; margin-bottom: 0.8rem; padding: 0.5rem; background: rgba(249, 244, 238, 0.7); backdrop-filter: blur(4px); border-radius: 0.75rem; text-align: center; }
+        .video-intro { font-size: 0.9rem; color: #6b5a4a; margin-bottom: 0.8rem; padding: 0.5rem; background: rgba(249, 244, 238, 0.6); backdrop-filter: blur(4px); border-radius: 0.75rem; text-align: center; }
         .giscus { margin-top: 1rem; }
         
-        /* 底部毛玻璃效果 */
         footer { 
             text-align: center; 
             margin-top: 2rem; 
@@ -145,7 +168,7 @@
             border-top: 1px solid rgba(240, 234, 226, 0.8); 
             font-size: 0.8rem; 
             color: #aa9b8c; 
-            background: rgba(254, 250, 245, 0.5);
+            background: rgba(254, 250, 245, 0.4);
             backdrop-filter: blur(8px);
         }
         
@@ -153,28 +176,108 @@
             .blog-content { padding: 1.5rem; } 
             .blog-title { font-size: 2rem; }
             .glass-overlay { padding: 1rem 0.5rem; }
+            .article-actions { justify-content: center; }
         }
-        button { background: none; border: none; }
+        button { background: none; border: none; cursor: pointer; }
         .loading { text-align: center; padding: 3rem; color: #aa9b8c; }
         
-        /* 背景设置按钮样式 */
-        .bg-setting-btn { background: rgba(127, 94, 60, 0.9); backdrop-filter: blur(4px); padding: 0.4rem 1rem; font-size: 0.8rem; border-radius: 60px; color: white; cursor: pointer; border: none; font-weight: 500; }
+        /* 自定义模态框样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .modal-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px);
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #3e2c21;
+            margin-bottom: 1rem;
+            border-left: 4px solid #c7a66b;
+            padding-left: 0.8rem;
+        }
+        .modal-input, .modal-textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #e4d9ce;
+            border-radius: 1rem;
+            font-family: inherit;
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.9);
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+        }
+        .modal-textarea { min-height: 120px; resize: vertical; }
+        .modal-input:focus, .modal-textarea:focus {
+            outline: none;
+            border-color: #c7a66b;
+            box-shadow: 0 0 0 2px rgba(199, 166, 107, 0.2);
+        }
+        .modal-buttons { display: flex; gap: 0.8rem; justify-content: flex-end; }
+        .modal-btn {
+            padding: 0.5rem 1.2rem;
+            border-radius: 2rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+        .modal-btn.confirm { background: #c7a66b; color: white; }
+        .modal-btn.confirm:hover { background: #b58a4a; transform: scale(0.98); }
+        .modal-btn.cancel { background: #e9e0d6; color: #5a3f28; }
+        .modal-btn.cancel:hover { background: #ddd0c2; }
+        .modal-hint { font-size: 0.75rem; color: #aa947c; margin-bottom: 1rem; }
         
-        /* Giscus 评论区背景适配 */
+        .edit-mode-badge {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(127, 94, 60, 0.9);
+            backdrop-filter: blur(8px);
+            padding: 0.4rem 1rem;
+            border-radius: 40px;
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 500;
+            z-index: 100;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .edit-mode-badge:hover { background: #7f5e3c; transform: scale(1.02); }
+        
         .giscus-frame, .giscus { background: transparent !important; }
     </style>
 </head>
 <body>
-<!-- 外层毛玻璃覆盖层 - 增大毛玻璃面积 -->
 <div class="glass-overlay">
     <div class="blog-wrapper">
-        <div class="admin-bar" id="adminBar">
-            <button class="admin-btn" id="masterControlBtn">🔐 管理员登录</button>
-        </div>
         <div class="blog-content" id="blogRoot">
             <div class="loading">加载中...</div>
         </div>
-        <footer>© Astroptis · 数据存储于 GitHub 仓库 | 留言板由 Giscus 提供</footer>
+        <footer>© Astroptis · 数据存储于 GitHub 仓库</footer>
     </div>
 </div>
 
@@ -204,8 +307,10 @@
     let editMode = false;
     let githubToken = null;
     const TOKEN_STORAGE_KEY = 'github_blog_token';
+    let clickCount = 0;
+    let clickTimer = null;
 
-    // 默认数据结构
+    // 默认数据结构（添加 pinned 字段）
     const DEFAULT_DATA = {
         blogTitle: "Astroptis",
         author: "林染秋",
@@ -217,11 +322,98 @@
         videoIntro: "📺 每周分享一部好电影或一段治愈影像 | 本期推荐：《山海之间》纪录片片段",
         skills: "摄影, 散文写作, 前端开发, 徒步, 茶道",
         hobbies: "阅读, 旅行, 音乐, 电影, 咖啡, 骑行",
-        backgroundImage: "",  // 背景图片 URL
+        backgroundImage: "",
         articles: []
     };
 
     let blogData = { ...DEFAULT_DATA };
+
+    // ==================== 自定义模态框 ====================
+    function showModal(title, value, type, callback) {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal-container';
+        
+        const titleEl = document.createElement('div');
+        titleEl.className = 'modal-title';
+        titleEl.textContent = title;
+        modal.appendChild(titleEl);
+        
+        let inputEl;
+        if (type === 'textarea') {
+            inputEl = document.createElement('textarea');
+            inputEl.className = 'modal-textarea';
+            inputEl.value = value || '';
+            inputEl.placeholder = '请输入内容...';
+        } else if (type === 'list') {
+            inputEl = document.createElement('textarea');
+            inputEl.className = 'modal-textarea';
+            inputEl.value = value || '';
+            inputEl.placeholder = '用英文逗号分隔多个项目\n例如：阅读, 旅行, 音乐';
+            const hint = document.createElement('div');
+            hint.className = 'modal-hint';
+            hint.textContent = '💡 用英文逗号分隔多个项目';
+            modal.appendChild(hint);
+        } else {
+            inputEl = document.createElement('input');
+            inputEl.type = 'text';
+            inputEl.className = 'modal-input';
+            inputEl.value = value || '';
+            inputEl.placeholder = '请输入内容...';
+        }
+        modal.appendChild(inputEl);
+        
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.className = 'modal-buttons';
+        
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'modal-btn confirm';
+        confirmBtn.textContent = '确定';
+        confirmBtn.onclick = () => {
+            const newValue = inputEl.value;
+            overlay.remove();
+            callback(newValue);
+        };
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'modal-btn cancel';
+        cancelBtn.textContent = '取消';
+        cancelBtn.onclick = () => {
+            overlay.remove();
+            callback(null);
+        };
+        
+        buttonsDiv.appendChild(confirmBtn);
+        buttonsDiv.appendChild(cancelBtn);
+        modal.appendChild(buttonsDiv);
+        
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        
+        setTimeout(() => inputEl.focus(), 50);
+        
+        if (type !== 'textarea' && type !== 'list') {
+            inputEl.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') confirmBtn.click();
+            });
+        }
+    }
+    
+    function showPasswordModal(callback) {
+        showModal('🔑 管理员验证', '', 'text', (pwd) => {
+            if (pwd === ADMIN_PASSWORD) callback(true);
+            else { showToast('❌ 密码错误', '#b55a3c'); callback(false); }
+        });
+    }
+    
+    function showTokenModal(callback) {
+        showModal('🔧 GitHub Token', '', 'textarea', (token) => {
+            if (token && token.trim()) callback(token.trim());
+            else callback(null);
+        });
+    }
 
     // 应用背景图片
     function applyBackground() {
@@ -236,13 +428,8 @@
         }
     }
 
-    // 安全的 Base64 解码（支持 UTF-8）
     function base64Decode(str) {
-        try {
-            return decodeURIComponent(escape(atob(str)));
-        } catch (e) {
-            return atob(str);
-        }
+        try { return decodeURIComponent(escape(atob(str))); } catch (e) { return atob(str); }
     }
 
     async function getFileSha() {
@@ -265,6 +452,10 @@
                 if (!blogData.hobbies) blogData.hobbies = DEFAULT_DATA.hobbies;
                 if (!blogData.videoIntro) blogData.videoIntro = DEFAULT_DATA.videoIntro;
                 if (!blogData.backgroundImage) blogData.backgroundImage = "";
+                // 确保每篇文章都有 pinned 字段
+                blogData.articles.forEach(article => {
+                    if (article.pinned === undefined) article.pinned = false;
+                });
             } else {
                 await saveToGitHub(DEFAULT_DATA);
                 blogData = { ...DEFAULT_DATA };
@@ -314,14 +505,13 @@
             console.error(err);
             showToast("❌ 保存失败：" + err.message, "#b55a3c");
             if (err.message.includes("Token 无效")) {
-                const newToken = prompt("Token 无效，请重新输入 GitHub Personal Access Token:", "");
-                if (newToken) {
-                    localStorage.setItem(TOKEN_STORAGE_KEY, newToken);
-                    githubToken = newToken;
-                    await saveAllData();
-                } else {
-                    disableEditMode();
-                }
+                showTokenModal((newToken) => {
+                    if (newToken) {
+                        localStorage.setItem(TOKEN_STORAGE_KEY, newToken);
+                        githubToken = newToken;
+                        saveAllData();
+                    } else disableEditMode();
+                });
             }
             throw err;
         }
@@ -330,7 +520,7 @@
     function showToast(msg, bgColor) {
         const toast = document.createElement('div');
         toast.textContent = msg;
-        toast.style.cssText = `position:fixed; bottom:20px; left:20px; background:${bgColor}; color:white; padding:8px 18px; border-radius:40px; font-size:0.8rem; z-index:999; box-shadow:0 2px 10px rgba(0,0,0,0.2);`;
+        toast.style.cssText = `position:fixed; bottom:20px; left:20px; background:${bgColor}; color:white; padding:8px 18px; border-radius:40px; font-size:0.8rem; z-index:1001; box-shadow:0 2px 10px rgba(0,0,0,0.2);`;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 3000);
     }
@@ -342,7 +532,7 @@
             if (m === '<') return '&lt;';
             if (m === '>') return '&gt;';
             return m;
-        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) { return c; });
+        });
     }
 
     function convertToBilibiliEmbed(input) {
@@ -375,55 +565,8 @@
         return convertToBilibiliEmbed("BV1GJ411x7h7");
     }
 
-    function editVideoHandler() {
-        const currentInput = blogData.videoEmbed || "BV1GJ411x7h7";
-        const newVal = prompt("🎬 更换哔哩哔哩视频\n\n支持格式：\n• BV号 (如 BV1GJ411x7h7)\n• 视频链接\n• av号 (如 av123456)\n\n当前值: " + currentInput, currentInput);
-        if (newVal === null) return;
-        if (newVal.trim() === "") {
-            blogData.videoEmbed = "BV1GJ411x7h7";
-            saveAllData().then(() => renderFullBlog());
-            showToast("✅ 已恢复默认视频", "#2c2a29");
-            return;
-        }
-        const converted = convertToBilibiliEmbed(newVal);
-        if (converted) {
-            blogData.videoEmbed = newVal;
-            saveAllData().then(() => renderFullBlog());
-            showToast("✅ 视频更新成功！", "#2c2a29");
-        } else {
-            alert("❌ 无效的哔哩哔哩视频信息\n请检查BV号或链接格式。");
-        }
-    }
-
-    // 编辑视频介绍
-    function editVideoIntroHandler() {
-        const current = blogData.videoIntro || "";
-        const newVal = prompt("✏️ 编辑视频模块介绍文字：", current);
-        if (newVal !== null && newVal !== current) {
-            blogData.videoIntro = newVal;
-            saveAllData().then(() => renderFullBlog());
-            showToast("✅ 视频介绍已更新", "#2c2a29");
-        }
-    }
-
-    // 编辑背景图片
-    function editBackgroundHandler() {
-        const current = blogData.backgroundImage || "";
-        const newVal = prompt("🎨 更换网页背景图片\n请输入图片 URL（留空则恢复默认背景）\n\n当前: " + (current || "无"), current);
-        if (newVal !== null) {
-            if (newVal.trim() === "") {
-                blogData.backgroundImage = "";
-                showToast("已恢复默认背景", "#2c2a29");
-            } else {
-                blogData.backgroundImage = newVal.trim();
-                showToast("背景图片已更新", "#2c2a29");
-            }
-            applyBackground();
-            saveAllData().then(() => renderFullBlog());
-        }
-    }
-
     function updateField(fieldKey, newValue) {
+        if (newValue === null) return;
         if (fieldKey === 'blogTitle') blogData.blogTitle = newValue;
         else if (fieldKey === 'author') blogData.author = newValue;
         else if (fieldKey === 'about') blogData.about = newValue;
@@ -440,75 +583,79 @@
         saveAllData().then(() => renderFullBlog());
     }
 
+    // 置顶/取消置顶文章
+    function togglePinArticle(articleId) {
+        const article = blogData.articles.find(a => a.id === articleId);
+        if (article) {
+            article.pinned = !article.pinned;
+            // 重新排序：置顶文章在前，按 pinned 降序 + 日期降序
+            blogData.articles.sort((a, b) => {
+                if (a.pinned === b.pinned) {
+                    return new Date(b.date) - new Date(a.date);
+                }
+                return a.pinned ? -1 : 1;
+            });
+            saveAllData().then(() => renderFullBlog());
+            showToast(article.pinned ? "📌 文章已置顶" : "📍 文章已取消置顶", "#2c2a29");
+        }
+    }
+
     function addArticle() {
-        const title = prompt("输入文章标题:", "新文章");
-        if (!title) return;
-        const content = prompt("输入文章正文:", "");
-        if (content === null) return;
-        const imageUrl = prompt("输入封面图片URL (可选):", "https://picsum.photos/id/20/800/500");
-        const newArticle = {
-            id: Date.now() + '-' + Math.random().toString(36).substr(2, 6),
-            title: title.trim(),
-            content: content.trim(),
-            date: new Date().toISOString().slice(0, 10),
-            imageUrl: imageUrl && imageUrl.trim() ? imageUrl.trim() : "https://picsum.photos/id/26/800/500"
-        };
-        blogData.articles.unshift(newArticle);
-        saveAllData().then(() => renderFullBlog());
+        showModal('📝 添加新文章', '', 'textarea', (title) => {
+            if (!title) return;
+            showModal('📝 文章正文', '', 'textarea', (content) => {
+                if (content === null) return;
+                showModal('🖼️ 封面图片URL', 'https://picsum.photos/id/20/800/500', 'text', (imageUrl) => {
+                    const newArticle = {
+                        id: Date.now() + '-' + Math.random().toString(36).substr(2, 6),
+                        title: title.trim(),
+                        content: content.trim(),
+                        date: new Date().toISOString().slice(0, 10),
+                        imageUrl: imageUrl && imageUrl.trim() ? imageUrl.trim() : "https://picsum.photos/id/26/800/500",
+                        pinned: false
+                    };
+                    blogData.articles.unshift(newArticle);
+                    saveAllData().then(() => renderFullBlog());
+                });
+            });
+        });
     }
 
     function editArticle(articleId) {
         const article = blogData.articles.find(a => a.id === articleId);
         if (!article) return;
-        const newTitle = prompt("编辑标题:", article.title);
-        if (newTitle === null) return;
-        const newContent = prompt("编辑正文:", article.content);
-        if (newContent === null) return;
-        const newImage = prompt("编辑图片URL:", article.imageUrl);
-        article.title = newTitle.trim();
-        article.content = newContent.trim();
-        if (newImage !== null) article.imageUrl = newImage.trim() || article.imageUrl;
-        article.date = new Date().toISOString().slice(0, 10);
-        saveAllData().then(() => renderFullBlog());
+        showModal('✏️ 编辑标题', article.title, 'text', (newTitle) => {
+            if (newTitle === null) return;
+            showModal('✏️ 编辑正文', article.content, 'textarea', (newContent) => {
+                if (newContent === null) return;
+                showModal('🖼️ 编辑图片URL', article.imageUrl, 'text', (newImage) => {
+                    article.title = newTitle.trim();
+                    article.content = newContent.trim();
+                    if (newImage !== null) article.imageUrl = newImage.trim() || article.imageUrl;
+                    article.date = new Date().toISOString().slice(0, 10);
+                    saveAllData().then(() => renderFullBlog());
+                });
+            });
+        });
     }
 
     function deleteArticle(articleId) {
-        if (confirm("确定删除这篇文章吗？")) {
-            blogData.articles = blogData.articles.filter(a => a.id !== articleId);
-            saveAllData().then(() => renderFullBlog());
-        }
+        showModal('🗑️ 确认删除', '确定要删除这篇文章吗？\n\n输入「确定」确认删除：', 'text', (confirm) => {
+            if (confirm && confirm === '确定') {
+                blogData.articles = blogData.articles.filter(a => a.id !== articleId);
+                saveAllData().then(() => renderFullBlog());
+            } else if (confirm !== null) {
+                showToast('已取消删除', '#aa947c');
+            }
+        });
     }
 
-    function editFieldHandler(fieldKey, label) {
-        if (fieldKey === 'videoEmbed') { editVideoHandler(); return; }
-        if (fieldKey === 'videoIntro') { editVideoIntroHandler(); return; }
-        if (fieldKey === 'backgroundImage') { editBackgroundHandler(); return; }
+    function editFieldHandler(fieldKey, label, type = 'text') {
         const current = blogData[fieldKey];
-        let newVal;
-        if (fieldKey === 'skills' || fieldKey === 'hobbies') {
-            newVal = prompt(`编辑「${label}」\n用英文逗号分隔多个项目\n当前：${current}`, current);
-        } else if (fieldKey === 'about') {
-            newVal = prompt(`编辑「${label}」`, current);
-        } else {
-            newVal = prompt(`编辑「${label}」`, current);
-        }
-        if (newVal !== null && newVal !== current) updateField(fieldKey, newVal);
-    }
-
-    function updateToken() {
-        const newToken = prompt("请输入新的 GitHub Personal Access Token（留空则清除存储）:", "");
-        if (newToken === null) return;
-        if (newToken.trim() === "") {
-            localStorage.removeItem(TOKEN_STORAGE_KEY);
-            githubToken = null;
-            showToast("已清除存储的 Token", "#a18a6e");
-            if (editMode) disableEditMode();
-        } else {
-            localStorage.setItem(TOKEN_STORAGE_KEY, newToken);
-            githubToken = newToken;
-            showToast("Token 已更新并存储", "#2c2a29");
-            if (editMode) saveAllData().catch(() => {});
-        }
+        const modalType = (fieldKey === 'skills' || fieldKey === 'hobbies') ? 'list' : (fieldKey === 'about' || fieldKey === 'videoIntro') ? 'textarea' : type;
+        showModal(`✏️ 编辑${label}`, current, modalType, (newVal) => {
+            if (newVal !== null && newVal !== current) updateField(fieldKey, newVal);
+        });
     }
 
     function loadGiscus() {
@@ -538,57 +685,35 @@
 
         document.title = blogData.blogTitle + " | GitHub 博客";
 
-        const controlBtn = document.getElementById('masterControlBtn');
-        if (controlBtn) {
-            controlBtn.textContent = editMode ? "✏️ 退出编辑模式" : "🔐 管理员登录";
-            controlBtn.style.background = editMode ? "#7f5e3c" : "#2c2a29";
-        }
-        let badge = document.getElementById('editModeBadge');
-        if (!badge && document.getElementById('adminBar')) {
-            badge = document.createElement('span');
-            badge.id = 'editModeBadge';
-            badge.className = 'edit-mode-badge';
-            document.getElementById('adminBar').insertBefore(badge, controlBtn);
-        }
-        if (badge) {
-            badge.textContent = editMode ? "✏️ 编辑模式已开启" : "";
-            badge.style.display = editMode ? "inline-block" : "none";
-        }
-
-        let tokenBtn = document.getElementById('tokenChangeBtn');
-        if (editMode && !tokenBtn && document.getElementById('adminBar')) {
-            tokenBtn = document.createElement('button');
-            tokenBtn.id = 'tokenChangeBtn';
-            tokenBtn.className = 'token-btn';
-            tokenBtn.textContent = '🔑 更换 Token';
-            document.getElementById('adminBar').appendChild(tokenBtn);
-            tokenBtn.addEventListener('click', updateToken);
-        } else if (!editMode && tokenBtn) {
-            tokenBtn.remove();
-        }
-
-        let bgBtn = document.getElementById('bgSettingBtn');
-        if (editMode && !bgBtn && document.getElementById('adminBar')) {
-            bgBtn = document.createElement('button');
-            bgBtn.id = 'bgSettingBtn';
-            bgBtn.className = 'bg-setting-btn';
-            bgBtn.textContent = '🎨 更换背景';
-            document.getElementById('adminBar').appendChild(bgBtn);
-            bgBtn.addEventListener('click', editBackgroundHandler);
-        } else if (!editMode && bgBtn) {
-            bgBtn.remove();
-        }
+        // 排序文章：置顶优先，然后按日期降序
+        const sortedArticles = [...blogData.articles].sort((a, b) => {
+            if (a.pinned === b.pinned) {
+                return new Date(b.date) - new Date(a.date);
+            }
+            return a.pinned ? -1 : 1;
+        });
 
         let articlesHtml = '';
-        if (blogData.articles && blogData.articles.length) {
-            blogData.articles.forEach(article => {
+        if (sortedArticles && sortedArticles.length) {
+            sortedArticles.forEach(article => {
+                const pinnedClass = article.pinned ? 'pinned' : '';
+                const pinnedBadge = article.pinned ? '<span class="pinned-badge">📌 置顶</span>' : '';
                 articlesHtml += `
-                    <div class="article-card relative-edit">
-                        <div class="article-title">${escapeHtml(article.title)}</div>
+                    <div class="article-card ${pinnedClass} relative-edit">
+                        <div class="article-title">
+                            ${escapeHtml(article.title)}
+                            ${pinnedBadge}
+                        </div>
                         <div class="article-date">📅 ${escapeHtml(article.date)}</div>
                         ${article.imageUrl ? `<img class="article-image" src="${escapeHtml(article.imageUrl)}" alt="cover" onerror="this.src='https://picsum.photos/id/104/800/500'">` : ''}
                         <div class="article-body">${escapeHtml(article.content).replace(/\n/g, '<br>')}</div>
-                        ${editMode ? `<div class="article-actions"><button class="article-action-btn edit-article" data-id="${article.id}">✏️ 编辑</button><button class="article-action-btn delete" data-id="${article.id}">🗑️ 删除</button></div>` : ''}
+                        ${editMode ? `
+                            <div class="article-actions">
+                                <button class="article-action-btn edit-article" data-id="${article.id}">✏️ 编辑</button>
+                                <button class="article-action-btn ${article.pinned ? 'unpin' : 'pin'}" data-id="${article.id}" data-pin-action="${!article.pinned}">${article.pinned ? '📍 取消置顶' : '📌 置顶'}</button>
+                                <button class="article-action-btn delete" data-id="${article.id}">🗑️ 删除</button>
+                            </div>
+                        ` : ''}
                     </div>
                 `;
             });
@@ -599,21 +724,18 @@
         const addBtnHtml = editMode ? `<div style="text-align:right; margin-bottom:1rem;"><button class="add-article-btn" id="addNewArticleBtn">➕ 添加新文章</button></div>` : '';
 
         const skillsArray = blogData.skills ? blogData.skills.split(',').map(s => s.trim()).filter(s => s) : [];
-        const skillsHtml = skillsArray.length > 0 
-            ? skillsArray.map(s => `<span class="skill-tag">${escapeHtml(s)}</span>`).join('')
-            : '<span style="color:#aa947c;">暂无技能</span>';
+        const skillsHtml = skillsArray.length > 0 ? skillsArray.map(s => `<span class="skill-tag">${escapeHtml(s)}</span>`).join('') : '<span style="color:#aa947c;">暂无技能</span>';
         
         const hobbiesArray = blogData.hobbies ? blogData.hobbies.split(',').map(h => h.trim()).filter(h => h) : [];
-        const hobbiesHtml = hobbiesArray.length > 0 
-            ? hobbiesArray.map(h => `<span class="hobby-tag">${escapeHtml(h)}</span>`).join('')
-            : '<span style="color:#aa947c;">暂无喜好</span>';
+        const hobbiesHtml = hobbiesArray.length > 0 ? hobbiesArray.map(h => `<span class="hobby-tag">${escapeHtml(h)}</span>`).join('') : '<span style="color:#aa947c;">暂无喜好</span>';
 
         const videoIntroHtml = blogData.videoIntro ? escapeHtml(blogData.videoIntro) : "";
 
         const html = `
-            <div class="blog-header relative-edit">
+            <div class="blog-header relative-edit" id="blogHeader">
                 <h1 class="blog-title">${escapeHtml(blogData.blogTitle)}</h1>
                 <p class="blog-author">✍️ ${escapeHtml(blogData.author)}</p>
+                <div class="click-hint">✨ 点击标题 5 次进入编辑模式</div>
                 ${editMode ? `<div class="edit-icon" data-edit-field="blogTitle" data-label="博客标题">✎ 标题</div><div class="edit-icon" style="top:3.2rem;" data-edit-field="author" data-label="作者名称">✎ 作者</div>` : ''}
             </div>
             <div class="grid-layout"><div class="card full-width relative-edit"><h2 class="section-title">📖 关于我</h2><p style="white-space: pre-wrap;">${escapeHtml(blogData.about)}</p>${editMode ? `<div class="edit-icon" data-edit-field="about" data-label="关于我内容">✎ 编辑</div>` : ''}</div></div>
@@ -627,7 +749,7 @@
                 <div class="card relative-edit"><h2 class="section-title">❤️ 个人喜好</h2><div class="hobbies-list">${hobbiesHtml}</div>${editMode ? `<div class="edit-icon" data-edit-field="hobbies" data-label="喜好列表(逗号分隔)">✎ 编辑喜好</div>` : ''}</div>
             </div>
             <div class="grid-layout"><div class="card full-width relative-edit">
-                <h2 class="section-title">🎬 哔哩哔哩 · 影像诗</h2>
+                <h2 class="section-title">🎬 一些好看的视频</h2>
                 ${videoIntroHtml ? `<div class="video-intro">${escapeHtml(videoIntroHtml)}</div>` : ''}
                 <div class="video-container" id="biliVideoContainer"></div>
                 <div class="bili-tip">💡 管理员登录后点击右上角铅笔更换 B站视频</div>
@@ -659,30 +781,60 @@
             const addBtn = document.getElementById('addNewArticleBtn');
             if (addBtn) addBtn.addEventListener('click', addArticle);
             document.querySelectorAll('.edit-article').forEach(btn => btn.addEventListener('click', (e) => editArticle(btn.getAttribute('data-id'))));
+            document.querySelectorAll('.article-action-btn.pin, .article-action-btn.unpin').forEach(btn => {
+                btn.addEventListener('click', (e) => togglePinArticle(btn.getAttribute('data-id')));
+            });
             document.querySelectorAll('.article-action-btn.delete').forEach(btn => btn.addEventListener('click', (e) => deleteArticle(btn.getAttribute('data-id'))));
         }
     }
 
+    function onTitleClick() {
+        if (editMode) return;
+        clickCount++;
+        if (clickTimer) clearTimeout(clickTimer);
+        clickTimer = setTimeout(() => { clickCount = 0; }, 1000);
+        if (clickCount >= 5) {
+            clickCount = 0;
+            showPasswordModal((success) => { if (success) enableEditMode(); });
+        }
+    }
+
     function enableEditMode() {
-        const pwd = prompt("🔑 管理员密码：", "");
-        if (pwd !== ADMIN_PASSWORD) { alert("密码错误"); return false; }
         let storedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
         if (storedToken) {
             githubToken = storedToken;
             editMode = true;
             renderFullBlog();
-            showToast("✅ 已使用存储的 Token 进入编辑模式", "#2c2a29");
+            showToast("✅ 编辑模式已开启", "#2c2a29");
+            let badge = document.getElementById('editModeBadge');
+            if (!badge) {
+                badge = document.createElement('div');
+                badge.id = 'editModeBadge';
+                badge.className = 'edit-mode-badge';
+                badge.textContent = '✏️ 编辑模式 (点击退出)';
+                badge.onclick = disableEditMode;
+                document.body.appendChild(badge);
+            }
             saveAllData().catch(() => {});
-            return true;
         } else {
-            const token = prompt("🔧 请输入 GitHub Personal Access Token (需 repo 权限)\n获取地址: https://github.com/settings/tokens", "");
-            if (!token) { alert("未提供令牌，无法保存数据"); return false; }
-            githubToken = token;
-            localStorage.setItem(TOKEN_STORAGE_KEY, token);
-            editMode = true;
-            renderFullBlog();
-            showToast("✅ 编辑模式已开启，Token 已保存", "#2c2a29");
-            return true;
+            showTokenModal((token) => {
+                if (token) {
+                    githubToken = token;
+                    localStorage.setItem(TOKEN_STORAGE_KEY, token);
+                    editMode = true;
+                    renderFullBlog();
+                    showToast("✅ 编辑模式已开启，Token 已保存", "#2c2a29");
+                    let badge = document.getElementById('editModeBadge');
+                    if (!badge) {
+                        badge = document.createElement('div');
+                        badge.id = 'editModeBadge';
+                        badge.className = 'edit-mode-badge';
+                        badge.textContent = '✏️ 编辑模式 (点击退出)';
+                        badge.onclick = disableEditMode;
+                        document.body.appendChild(badge);
+                    }
+                }
+            });
         }
     }
 
@@ -690,19 +842,16 @@
         editMode = false;
         githubToken = null;
         renderFullBlog();
+        const badge = document.getElementById('editModeBadge');
+        if (badge) badge.remove();
         showToast("🔒 已退出编辑模式", "#a18a6e");
     }
 
-    function onMasterControlClick() { editMode ? disableEditMode() : enableEditMode(); }
-
     async function init() {
         await loadFromGitHub();
-        const btn = document.getElementById('masterControlBtn');
-        if (btn) {
-            const newBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(newBtn, btn);
-            newBtn.addEventListener('click', onMasterControlClick);
-        }
+        const header = document.getElementById('blogHeader');
+        if (header) header.addEventListener('click', onTitleClick);
+        else setTimeout(() => { const h = document.getElementById('blogHeader'); if (h) h.addEventListener('click', onTitleClick); }, 500);
     }
     init();
 </script>
