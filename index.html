@@ -60,7 +60,7 @@
             box-shadow: 0 8px 20px rgba(0,0,0,0.1); 
         }
         
-        /* 文章卡片样式 - 置顶文章特殊样式 */
+        /* 文章卡片样式 */
         .article-card { 
             background: rgba(254, 252, 248, 0.6); 
             backdrop-filter: blur(8px);
@@ -70,10 +70,12 @@
             border: 1px solid rgba(255, 255, 255, 0.6); 
             position: relative; 
             transition: all 0.2s;
+            cursor: pointer;
         }
         .article-card:hover {
             background: rgba(254, 252, 248, 0.75);
             border-color: rgba(255, 255, 255, 0.85);
+            transform: translateY(-2px);
         }
         .article-card.pinned {
             border-left: 4px solid #c7a66b;
@@ -101,8 +103,93 @@
             font-weight: 500;
         }
         .article-date { font-size: 0.75rem; color: #aa947c; margin-bottom: 0.8rem; }
-        .article-body { white-space: pre-wrap; }
+        .article-excerpt { 
+            color: #6b5a4a; 
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .read-more {
+            display: inline-block;
+            color: #c7a66b;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-top: 0.5rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .read-more:hover { color: #9b6f42; text-decoration: underline; }
         .article-image { max-width: 100%; border-radius: 1rem; margin: 0.8rem 0; max-height: 240px; object-fit: cover; }
+        
+        /* 详情页样式 */
+        .detail-container {
+            animation: fadeIn 0.3s ease;
+        }
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(199, 166, 107, 0.9);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 1.5rem;
+            transition: all 0.2s;
+        }
+        .back-btn:hover {
+            background: #b58a4a;
+            transform: translateX(-3px);
+        }
+        .detail-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #3b2e24;
+            margin-bottom: 1rem;
+            line-height: 1.3;
+        }
+        .detail-meta {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(199, 166, 107, 0.3);
+            color: #aa947c;
+            font-size: 0.9rem;
+        }
+        .detail-content {
+            font-size: 1.05rem;
+            line-height: 1.8;
+            color: #3c352e;
+            white-space: pre-wrap;
+            margin-bottom: 2rem;
+        }
+        .detail-image {
+            max-width: 100%;
+            border-radius: 1.5rem;
+            margin: 1rem 0 1.5rem 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .detail-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(199, 166, 107, 0.3);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
         
         .blog-header { 
             text-align: center; 
@@ -176,6 +263,7 @@
             .blog-content { padding: 1.5rem; } 
             .blog-title { font-size: 2rem; }
             .glass-overlay { padding: 1rem 0.5rem; }
+            .detail-title { font-size: 1.6rem; }
             .article-actions { justify-content: center; }
         }
         button { background: none; border: none; cursor: pointer; }
@@ -195,10 +283,6 @@
             align-items: center;
             justify-content: center;
             animation: fadeIn 0.2s ease;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
         }
         .modal-container {
             background: rgba(255, 255, 255, 0.95);
@@ -277,7 +361,7 @@
         <div class="blog-content" id="blogRoot">
             <div class="loading">加载中...</div>
         </div>
-        <footer>© Astroptis · 数据存储于 GitHub 仓库</footer>
+        <footer>© Astroptis · 数据存储于 GitHub 仓库 | 留言板由 Giscus 提供</footer>
     </div>
 </div>
 
@@ -309,8 +393,10 @@
     const TOKEN_STORAGE_KEY = 'github_blog_token';
     let clickCount = 0;
     let clickTimer = null;
+    let currentView = 'list'; // 'list' 或 'detail'
+    let currentArticleId = null;
 
-    // 默认数据结构（添加 pinned 字段）
+    // 默认数据结构
     const DEFAULT_DATA = {
         blogTitle: "Astroptis",
         author: "林染秋",
@@ -452,7 +538,6 @@
                 if (!blogData.hobbies) blogData.hobbies = DEFAULT_DATA.hobbies;
                 if (!blogData.videoIntro) blogData.videoIntro = DEFAULT_DATA.videoIntro;
                 if (!blogData.backgroundImage) blogData.backgroundImage = "";
-                // 确保每篇文章都有 pinned 字段
                 blogData.articles.forEach(article => {
                     if (article.pinned === undefined) article.pinned = false;
                 });
@@ -465,7 +550,7 @@
             blogData = { ...DEFAULT_DATA };
         }
         applyBackground();
-        renderFullBlog();
+        renderView();
     }
 
     async function saveToGitHub(data) {
@@ -580,22 +665,18 @@
         else if (fieldKey === 'backgroundImage') blogData.backgroundImage = newValue;
         else return;
         if (fieldKey === 'backgroundImage') applyBackground();
-        saveAllData().then(() => renderFullBlog());
+        saveAllData().then(() => renderView());
     }
 
-    // 置顶/取消置顶文章
     function togglePinArticle(articleId) {
         const article = blogData.articles.find(a => a.id === articleId);
         if (article) {
             article.pinned = !article.pinned;
-            // 重新排序：置顶文章在前，按 pinned 降序 + 日期降序
             blogData.articles.sort((a, b) => {
-                if (a.pinned === b.pinned) {
-                    return new Date(b.date) - new Date(a.date);
-                }
+                if (a.pinned === b.pinned) return new Date(b.date) - new Date(a.date);
                 return a.pinned ? -1 : 1;
             });
-            saveAllData().then(() => renderFullBlog());
+            saveAllData().then(() => renderView());
             showToast(article.pinned ? "📌 文章已置顶" : "📍 文章已取消置顶", "#2c2a29");
         }
     }
@@ -615,7 +696,7 @@
                         pinned: false
                     };
                     blogData.articles.unshift(newArticle);
-                    saveAllData().then(() => renderFullBlog());
+                    saveAllData().then(() => renderView());
                 });
             });
         });
@@ -633,7 +714,13 @@
                     article.content = newContent.trim();
                     if (newImage !== null) article.imageUrl = newImage.trim() || article.imageUrl;
                     article.date = new Date().toISOString().slice(0, 10);
-                    saveAllData().then(() => renderFullBlog());
+                    saveAllData().then(() => {
+                        if (currentView === 'detail' && currentArticleId === articleId) {
+                            renderDetailView(article);
+                        } else {
+                            renderView();
+                        }
+                    });
                 });
             });
         });
@@ -643,7 +730,13 @@
         showModal('🗑️ 确认删除', '确定要删除这篇文章吗？\n\n输入「确定」确认删除：', 'text', (confirm) => {
             if (confirm && confirm === '确定') {
                 blogData.articles = blogData.articles.filter(a => a.id !== articleId);
-                saveAllData().then(() => renderFullBlog());
+                saveAllData().then(() => {
+                    if (currentView === 'detail' && currentArticleId === articleId) {
+                        currentView = 'list';
+                        currentArticleId = null;
+                    }
+                    renderView();
+                });
             } else if (confirm !== null) {
                 showToast('已取消删除', '#aa947c');
             }
@@ -679,17 +772,74 @@
         container.appendChild(script);
     }
 
-    function renderFullBlog() {
+    // 渲染详情页
+    function renderDetailView(article) {
+        const container = document.getElementById('blogRoot');
+        if (!container) return;
+
+        const excerpt = article.content.length > 200 ? article.content.substring(0, 200) + '...' : article.content;
+        
+        const html = `
+            <div class="detail-container">
+                <button class="back-btn" id="backToListBtn">← 返回列表</button>
+                <div class="card full-width">
+                    ${article.imageUrl ? `<img class="detail-image" src="${escapeHtml(article.imageUrl)}" alt="${escapeHtml(article.title)}" onerror="this.style.display='none'">` : ''}
+                    <h1 class="detail-title">${escapeHtml(article.title)}</h1>
+                    <div class="detail-meta">
+                        <span>📅 ${escapeHtml(article.date)}</span>
+                        ${article.pinned ? '<span>📌 置顶文章</span>' : ''}
+                    </div>
+                    <div class="detail-content">${escapeHtml(article.content).replace(/\n/g, '<br>')}</div>
+                    ${editMode ? `
+                        <div class="detail-actions">
+                            <button class="article-action-btn edit-article" data-id="${article.id}">✏️ 编辑文章</button>
+                            <button class="article-action-btn ${article.pinned ? 'unpin' : 'pin'}" data-id="${article.id}" data-pin-action="${!article.pinned}">${article.pinned ? '📍 取消置顶' : '📌 置顶'}</button>
+                            <button class="article-action-btn delete" data-id="${article.id}">🗑️ 删除文章</button>
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="card full-width" style="margin-top: 2rem;">
+                    <h2 class="section-title">💬 留言讨论</h2>
+                    <div id="giscusContainer" class="giscus"></div>
+                    <div style="font-size:0.7rem; color:#aa947c; text-align:center; margin-top:0.8rem;">✨ 使用 GitHub 账号登录即可留言，所有评论将存储于仓库的 Discussions 中</div>
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = html;
+
+        // 绑定返回按钮
+        const backBtn = document.getElementById('backToListBtn');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                currentView = 'list';
+                currentArticleId = null;
+                renderListView();
+            });
+        }
+
+        // 绑定编辑按钮
+        if (editMode) {
+            const editBtn = document.querySelector('.edit-article');
+            if (editBtn) editBtn.addEventListener('click', (e) => editArticle(article.id));
+            const pinBtn = document.querySelector('.pin, .unpin');
+            if (pinBtn) pinBtn.addEventListener('click', (e) => togglePinArticle(article.id));
+            const deleteBtn = document.querySelector('.delete');
+            if (deleteBtn) deleteBtn.addEventListener('click', (e) => deleteArticle(article.id));
+        }
+
+        loadGiscus();
+    }
+
+    // 渲染列表页
+    function renderListView() {
         const container = document.getElementById('blogRoot');
         if (!container) return;
 
         document.title = blogData.blogTitle + " | GitHub 博客";
 
-        // 排序文章：置顶优先，然后按日期降序
         const sortedArticles = [...blogData.articles].sort((a, b) => {
-            if (a.pinned === b.pinned) {
-                return new Date(b.date) - new Date(a.date);
-            }
+            if (a.pinned === b.pinned) return new Date(b.date) - new Date(a.date);
             return a.pinned ? -1 : 1;
         });
 
@@ -698,15 +848,17 @@
             sortedArticles.forEach(article => {
                 const pinnedClass = article.pinned ? 'pinned' : '';
                 const pinnedBadge = article.pinned ? '<span class="pinned-badge">📌 置顶</span>' : '';
+                const excerpt = article.content.length > 150 ? article.content.substring(0, 150) + '...' : article.content;
                 articlesHtml += `
-                    <div class="article-card ${pinnedClass} relative-edit">
+                    <div class="article-card ${pinnedClass} relative-edit" data-id="${article.id}">
                         <div class="article-title">
                             ${escapeHtml(article.title)}
                             ${pinnedBadge}
                         </div>
                         <div class="article-date">📅 ${escapeHtml(article.date)}</div>
                         ${article.imageUrl ? `<img class="article-image" src="${escapeHtml(article.imageUrl)}" alt="cover" onerror="this.src='https://picsum.photos/id/104/800/500'">` : ''}
-                        <div class="article-body">${escapeHtml(article.content).replace(/\n/g, '<br>')}</div>
+                        <div class="article-excerpt">${escapeHtml(excerpt).replace(/\n/g, '<br>')}</div>
+                        <div class="read-more" data-id="${article.id}">📖 阅读全文 →</div>
                         ${editMode ? `
                             <div class="article-actions">
                                 <button class="article-action-btn edit-article" data-id="${article.id}">✏️ 编辑</button>
@@ -739,7 +891,7 @@
                 ${editMode ? `<div class="edit-icon" data-edit-field="blogTitle" data-label="博客标题">✎ 标题</div><div class="edit-icon" style="top:3.2rem;" data-edit-field="author" data-label="作者名称">✎ 作者</div>` : ''}
             </div>
             <div class="grid-layout"><div class="card full-width relative-edit"><h2 class="section-title">📖 关于我</h2><p style="white-space: pre-wrap;">${escapeHtml(blogData.about)}</p>${editMode ? `<div class="edit-icon" data-edit-field="about" data-label="关于我内容">✎ 编辑</div>` : ''}</div></div>
-            <div style="margin: 2rem 0 1.5rem;"><h2 class="section-title">📝 最新手记</h2>${addBtnHtml}<div>${articlesHtml}</div></div>
+            <div style="margin: 2rem 0 1.5rem;"><h2 class="section-title">📝 最新手记</h2>${addBtnHtml}<div id="articlesList">${articlesHtml}</div></div>
             <div class="grid-layout">
                 <div class="card relative-edit"><h2 class="section-title">🌄 灵感瞬间</h2><img class="featured-img" src="${escapeHtml(blogData.imageUrl)}" alt="feature" onerror="this.src='https://picsum.photos/id/106/800/500'">${editMode ? `<div class="edit-icon" data-edit-field="imageUrl" data-label="图片地址">✎ 换图</div>` : ''}</div>
                 <div class="card relative-edit"><h2 class="section-title">✨ 珍藏之言</h2><div class="quote-text">“ ${escapeHtml(blogData.quoteText)} ”</div><div class="quote-author">—— ${escapeHtml(blogData.quoteAuthor)}</div>${editMode ? `<div class="edit-icon" data-edit-field="quoteText" data-label="引语内容">✎ 引语</div><div class="edit-icon" style="top: 4rem;" data-edit-field="quoteAuthor" data-label="引语作者">✎ 作者</div>` : ''}</div>
@@ -749,7 +901,7 @@
                 <div class="card relative-edit"><h2 class="section-title">❤️ 个人喜好</h2><div class="hobbies-list">${hobbiesHtml}</div>${editMode ? `<div class="edit-icon" data-edit-field="hobbies" data-label="喜好列表(逗号分隔)">✎ 编辑喜好</div>` : ''}</div>
             </div>
             <div class="grid-layout"><div class="card full-width relative-edit">
-                <h2 class="section-title">🎬 一些好看的视频</h2>
+                <h2 class="section-title">🎬 哔哩哔哩 · 影像诗</h2>
                 ${videoIntroHtml ? `<div class="video-intro">${escapeHtml(videoIntroHtml)}</div>` : ''}
                 <div class="video-container" id="biliVideoContainer"></div>
                 <div class="bili-tip">💡 管理员登录后点击右上角铅笔更换 B站视频</div>
@@ -770,6 +922,37 @@
         const videoContainer = document.getElementById('biliVideoContainer');
         if (videoContainer) videoContainer.innerHTML = getVideoEmbedCode();
 
+        // 绑定文章点击事件（阅读全文）
+        document.querySelectorAll('.read-more').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const articleId = el.getAttribute('data-id');
+                const article = blogData.articles.find(a => a.id === articleId);
+                if (article) {
+                    currentView = 'detail';
+                    currentArticleId = articleId;
+                    renderDetailView(article);
+                }
+            });
+        });
+
+        // 绑定卡片点击（可选，点击卡片任何区域也可进入详情）
+        document.querySelectorAll('.article-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                // 避免点击按钮时触发
+                if (e.target.classList.contains('article-action-btn') || 
+                    e.target.classList.contains('read-more') ||
+                    e.target.closest('.article-actions')) return;
+                const articleId = card.getAttribute('data-id');
+                const article = blogData.articles.find(a => a.id === articleId);
+                if (article) {
+                    currentView = 'detail';
+                    currentArticleId = articleId;
+                    renderDetailView(article);
+                }
+            });
+        });
+
         loadGiscus();
 
         if (editMode) {
@@ -780,11 +963,35 @@
             });
             const addBtn = document.getElementById('addNewArticleBtn');
             if (addBtn) addBtn.addEventListener('click', addArticle);
-            document.querySelectorAll('.edit-article').forEach(btn => btn.addEventListener('click', (e) => editArticle(btn.getAttribute('data-id'))));
+            document.querySelectorAll('.edit-article').forEach(btn => btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                editArticle(btn.getAttribute('data-id'));
+            }));
             document.querySelectorAll('.article-action-btn.pin, .article-action-btn.unpin').forEach(btn => {
-                btn.addEventListener('click', (e) => togglePinArticle(btn.getAttribute('data-id')));
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    togglePinArticle(btn.getAttribute('data-id'));
+                });
             });
-            document.querySelectorAll('.article-action-btn.delete').forEach(btn => btn.addEventListener('click', (e) => deleteArticle(btn.getAttribute('data-id'))));
+            document.querySelectorAll('.article-action-btn.delete').forEach(btn => btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteArticle(btn.getAttribute('data-id'));
+            }));
+        }
+    }
+
+    function renderView() {
+        if (currentView === 'detail' && currentArticleId) {
+            const article = blogData.articles.find(a => a.id === currentArticleId);
+            if (article) {
+                renderDetailView(article);
+            } else {
+                currentView = 'list';
+                currentArticleId = null;
+                renderListView();
+            }
+        } else {
+            renderListView();
         }
     }
 
@@ -804,7 +1011,7 @@
         if (storedToken) {
             githubToken = storedToken;
             editMode = true;
-            renderFullBlog();
+            renderView();
             showToast("✅ 编辑模式已开启", "#2c2a29");
             let badge = document.getElementById('editModeBadge');
             if (!badge) {
@@ -822,7 +1029,7 @@
                     githubToken = token;
                     localStorage.setItem(TOKEN_STORAGE_KEY, token);
                     editMode = true;
-                    renderFullBlog();
+                    renderView();
                     showToast("✅ 编辑模式已开启，Token 已保存", "#2c2a29");
                     let badge = document.getElementById('editModeBadge');
                     if (!badge) {
@@ -841,7 +1048,7 @@
     function disableEditMode() {
         editMode = false;
         githubToken = null;
-        renderFullBlog();
+        renderView();
         const badge = document.getElementById('editModeBadge');
         if (badge) badge.remove();
         showToast("🔒 已退出编辑模式", "#a18a6e");
