@@ -172,6 +172,25 @@
             white-space: pre-wrap;
             margin-bottom: 2rem;
         }
+        /* 文章中嵌入的视频样式 */
+        .detail-content .bilibili-video {
+            margin: 1.5rem 0;
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            border-radius: 1rem;
+            background: #1f1e1c;
+        }
+        .detail-content .bilibili-video iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 0.75rem;
+        }
         .detail-image {
             max-width: 100%;
             border-radius: 1.5rem;
@@ -405,7 +424,7 @@
             margin-bottom: 1rem;
             transition: all 0.2s;
         }
-        .modal-textarea { min-height: 120px; resize: vertical; }
+        .modal-textarea { min-height: 200px; resize: vertical; }
         .modal-input:focus, .modal-textarea:focus {
             outline: none;
             border-color: #c7a66b;
@@ -427,6 +446,17 @@
         .modal-hint { font-size: 0.75rem; color: #aa947c; margin-bottom: 1rem; }
         
         .giscus-frame, .giscus { background: transparent !important; }
+        
+        /* B站视频插入提示 */
+        .video-insert-hint {
+            font-size: 0.7rem;
+            color: #b48c5c;
+            background: rgba(249, 244, 238, 0.6);
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -483,7 +513,7 @@
     let currentView = 'list';
     let currentArticleId = null;
 
-    // ==================== 默认数据结构（必须在 blogData 之前定义） ====================
+    // ==================== 默认数据结构 ====================
     const DEFAULT_DATA = {
         blogTitle: "Astroptis",
         author: "林染秋",
@@ -500,6 +530,78 @@
     };
 
     let blogData = { ...DEFAULT_DATA };
+
+    // ==================== 哔哩哔哩视频转换函数 ====================
+    function convertToBilibiliEmbed(input) {
+        if (!input) return null;
+        let match;
+        // 匹配 BV号
+        if ((match = input.match(/BV([a-zA-Z0-9]{10})/i))) {
+            const bvid = "BV" + match[1];
+            return `<div class="bilibili-video"><iframe src="https://player.bilibili.com/player.html?bvid=${bvid}&page=1&high_quality=1&autoplay=0" frameborder="0" allowfullscreen></iframe></div>`;
+        }
+        // 匹配 av号
+        if ((match = input.match(/av(\d+)/i))) {
+            const avid = match[1];
+            return `<div class="bilibili-video"><iframe src="https://player.bilibili.com/player.html?aid=${avid}&page=1&high_quality=1&autoplay=0" frameborder="0" allowfullscreen></iframe></div>`;
+        }
+        // 匹配完整链接（BV）
+        if ((match = input.match(/bilibili\.com\/video\/(BV[a-zA-Z0-9]+)/i))) {
+            const bvid = match[1];
+            return `<div class="bilibili-video"><iframe src="https://player.bilibili.com/player.html?bvid=${bvid}&page=1&high_quality=1&autoplay=0" frameborder="0" allowfullscreen></iframe></div>`;
+        }
+        // 匹配完整链接（av）
+        if ((match = input.match(/bilibili\.com\/video\/av(\d+)/i))) {
+            const avid = match[1];
+            return `<div class="bilibili-video"><iframe src="https://player.bilibili.com/player.html?aid=${avid}&page=1&high_quality=1&autoplay=0" frameborder="0" allowfullscreen></iframe></div>`;
+        }
+        return null;
+    }
+
+    // 解析文章内容中的视频标记，转换为嵌入代码
+    function parseArticleContent(content) {
+        if (!content) return '';
+        
+        // 匹配 [bilibili:xxx] 格式的标记
+        // 支持: [bilibili:BV1GJ411x7h7] 或 [bilibili:https://www.bilibili.com/video/BV1GJ411x7h7]
+        const regex = /\[bilibili:([^\]]+)\]/g;
+        
+        let processedContent = content;
+        let match;
+        let lastIndex = 0;
+        let result = '';
+        
+        // 逐段处理，保留非标记文本
+        while ((match = regex.exec(content)) !== null) {
+            // 添加标记前的文本（转义）
+            result += escapeHtml(content.substring(lastIndex, match.index));
+            // 转换视频标记
+            const videoCode = convertToBilibiliEmbed(match[1]);
+            if (videoCode) {
+                result += videoCode;
+            } else {
+                // 无效的标记，显示为普通文本提示
+                result += `<span style="color:#b55a3c; font-size:0.8rem;">[无效视频: ${escapeHtml(match[1])}]</span>`;
+            }
+            lastIndex = regex.lastIndex;
+        }
+        // 添加剩余文本
+        result += escapeHtml(content.substring(lastIndex));
+        
+        // 处理换行
+        result = result.replace(/\n/g, '<br>');
+        
+        return result;
+    }
+
+    // 获取侧边栏视频嵌入代码
+    function getSideVideoEmbedCode() {
+        if (blogData.videoEmbed) {
+            const converted = convertToBilibiliEmbed(blogData.videoEmbed);
+            if (converted) return converted;
+        }
+        return convertToBilibiliEmbed("BV1GJ411x7h7");
+    }
 
     // ==================== 确认对话框 ====================
     function showConfirm(title, message, onConfirm) {
@@ -579,7 +681,7 @@
             inputEl = document.createElement('textarea');
             inputEl.className = 'modal-textarea';
             inputEl.value = value || '';
-            inputEl.placeholder = '请输入内容...';
+            inputEl.placeholder = '请输入内容...\n\n💡 插入B站视频：使用 [bilibili:BV号] 格式，例如 [bilibili:BV1GJ411x7h7]';
         } else if (type === 'list') {
             inputEl = document.createElement('textarea');
             inputEl.className = 'modal-textarea';
@@ -597,6 +699,14 @@
             inputEl.placeholder = '请输入内容...';
         }
         modal.appendChild(inputEl);
+        
+        // 如果是编辑文章正文，添加视频插入提示
+        if (type === 'textarea' && title.includes('正文')) {
+            const hint = document.createElement('div');
+            hint.className = 'video-insert-hint';
+            hint.innerHTML = '💡 插入B站视频：使用 <code>[bilibili:BV号]</code> 格式<br>例如：<code>[bilibili:BV1GJ411x7h7]</code>';
+            modal.appendChild(hint);
+        }
         
         const buttonsDiv = document.createElement('div');
         buttonsDiv.className = 'modal-buttons';
@@ -654,9 +764,9 @@
             }
             const dateSpan = card.querySelector('.article-date');
             if (dateSpan) dateSpan.textContent = `📅 ${updatedArticle.date}`;
+            const excerpt = updatedArticle.content.length > 150 ? updatedArticle.content.substring(0, 150) + '...' : updatedArticle.content;
             const excerptDiv = card.querySelector('.article-excerpt');
             if (excerptDiv) {
-                const excerpt = updatedArticle.content.length > 150 ? updatedArticle.content.substring(0, 150) + '...' : updatedArticle.content;
                 excerptDiv.innerHTML = escapeHtml(excerpt).replace(/\n/g, '<br>');
             }
             const imgEl = card.querySelector('.article-image');
@@ -680,7 +790,7 @@
         const metaEl = document.querySelector('.detail-meta');
         if (metaEl) metaEl.innerHTML = `<span>📅 ${article.date}</span>${article.pinned ? '<span>📌 置顶文章</span>' : ''}`;
         const contentEl = document.querySelector('.detail-content');
-        if (contentEl) contentEl.innerHTML = escapeHtml(article.content).replace(/\n/g, '<br>');
+        if (contentEl) contentEl.innerHTML = parseArticleContent(article.content);
         const imgEl = document.querySelector('.detail-image');
         if (article.imageUrl) {
             if (imgEl) imgEl.src = article.imageUrl;
@@ -876,36 +986,6 @@
         }
     }
 
-    function convertToBilibiliEmbed(input) {
-        if (!input) return null;
-        let match;
-        if ((match = input.match(/BV([a-zA-Z0-9]{10})/i))) {
-            const bvid = "BV" + match[1];
-            return `<iframe src="https://player.bilibili.com/player.html?bvid=${bvid}&page=1&high_quality=1&autoplay=0" frameborder="0" allowfullscreen style="width:100%; height:100%; border-radius:0.75rem;"></iframe>`;
-        }
-        if ((match = input.match(/av(\d+)/i))) {
-            const avid = match[1];
-            return `<iframe src="https://player.bilibili.com/player.html?aid=${avid}&page=1&high_quality=1&autoplay=0" frameborder="0" allowfullscreen style="width:100%; height:100%; border-radius:0.75rem;"></iframe>`;
-        }
-        if ((match = input.match(/bilibili\.com\/video\/(BV[a-zA-Z0-9]+)/i))) {
-            const bvid = match[1];
-            return `<iframe src="https://player.bilibili.com/player.html?bvid=${bvid}&page=1&high_quality=1&autoplay=0" frameborder="0" allowfullscreen style="width:100%; height:100%; border-radius:0.75rem;"></iframe>`;
-        }
-        if ((match = input.match(/bilibili\.com\/video\/av(\d+)/i))) {
-            const avid = match[1];
-            return `<iframe src="https://player.bilibili.com/player.html?aid=${avid}&page=1&high_quality=1&autoplay=0" frameborder="0" allowfullscreen style="width:100%; height:100%; border-radius:0.75rem;"></iframe>`;
-        }
-        return null;
-    }
-
-    function getVideoEmbedCode() {
-        if (blogData.videoEmbed) {
-            const converted = convertToBilibiliEmbed(blogData.videoEmbed);
-            if (converted) return converted;
-        }
-        return convertToBilibiliEmbed("BV1GJ411x7h7");
-    }
-
     // 编辑函数（增量更新）
     function updateField(fieldKey, newValue) {
         if (newValue === null) return;
@@ -966,7 +1046,7 @@
             }
         } else if (fieldKey === 'videoEmbed') {
             const videoContainer = document.getElementById('biliVideoContainer');
-            if (videoContainer) videoContainer.innerHTML = getVideoEmbedCode();
+            if (videoContainer) videoContainer.innerHTML = getSideVideoEmbedCode();
         }
         
         saveAllData();
@@ -1149,7 +1229,7 @@
                         <span>📅 ${escapeHtml(article.date)}</span>
                         ${article.pinned ? '<span>📌 置顶文章</span>' : ''}
                     </div>
-                    <div class="detail-content">${escapeHtml(article.content).replace(/\n/g, '<br>')}</div>
+                    <div class="detail-content">${parseArticleContent(article.content)}</div>
                     ${editMode ? `
                         <div class="detail-actions">
                             <button class="article-action-btn edit-article" data-id="${article.id}">✏️ 编辑文章</button>
@@ -1262,7 +1342,7 @@
                 <div class="card relative-edit"><h2 class="section-title">❤️ 个人喜好</h2><div class="hobbies-list">${hobbiesArray.length ? hobbiesArray.map(h => `<span class="hobby-tag">${escapeHtml(h)}</span>`).join('') : '<span style="color:#aa947c;">暂无喜好</span>'}</div>${editMode ? `<div class="edit-icon" data-edit-field="hobbies" data-label="喜好列表(逗号分隔)">✎ 编辑喜好</div>` : ''}</div>
             </div>
             <div class="grid-layout"><div class="card full-width relative-edit">
-                <h2 class="section-title">🎬 一些好看的视频</h2>
+                <h2 class="section-title">🎬 一些视频</h2>
                 ${blogData.videoIntro ? `<div class="video-intro">${escapeHtml(blogData.videoIntro)}</div>` : ''}
                 <div class="video-container" id="biliVideoContainer"></div>
                 <div class="bili-tip">💡 管理员登录后点击右上角铅笔更换 B站视频</div>
@@ -1279,7 +1359,7 @@
         `;
         container.innerHTML = html;
         const videoContainer = document.getElementById('biliVideoContainer');
-        if (videoContainer) videoContainer.innerHTML = getVideoEmbedCode();
+        if (videoContainer) videoContainer.innerHTML = getSideVideoEmbedCode();
         loadGlobalGiscus();
         bindArticleEvents();
         if (editMode) {
