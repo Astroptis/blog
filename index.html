@@ -7,7 +7,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
-        /* 全局背景（支持动态更换，固定不滚动） */
+        /* 全局背景 */
         body { 
             background: #f5f3ef; 
             font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; 
@@ -27,6 +27,7 @@
             padding: 2rem 1rem;
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(6px);
+            animation: fadeIn 0.5s ease;
         }
         
         /* 博客主容器 */
@@ -39,11 +40,16 @@
             box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.15); 
             overflow: hidden; 
             border: 1px solid rgba(255, 255, 255, 0.5);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .blog-wrapper:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.2);
         }
         
         .blog-content { padding: 2rem 2rem 2.5rem; }
         
-        /* 半透明卡片 */
+        /* 卡片动效 */
         .card { 
             background: rgba(254, 252, 248, 0.6);
             backdrop-filter: blur(8px);
@@ -52,15 +58,17 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
             border: 1px solid rgba(255, 255, 255, 0.6); 
             position: relative; 
-            transition: all 0.2s; 
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1); 
+            animation: slideUp 0.4s ease;
         }
         .card:hover { 
             border-color: rgba(255, 255, 255, 0.85); 
             background: rgba(254, 252, 248, 0.75);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1); 
+            box-shadow: 0 12px 28px rgba(0,0,0,0.12); 
+            transform: translateY(-4px);
         }
         
-        /* 文章卡片样式 */
+        /* 文章卡片动效 */
         .article-card { 
             background: rgba(254, 252, 248, 0.6); 
             backdrop-filter: blur(8px);
@@ -69,13 +77,15 @@
             margin-bottom: 1.5rem; 
             border: 1px solid rgba(255, 255, 255, 0.6); 
             position: relative; 
-            transition: all 0.2s;
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
             cursor: pointer;
+            animation: fadeInUp 0.4s ease;
         }
         .article-card:hover {
             background: rgba(254, 252, 248, 0.75);
             border-color: rgba(255, 255, 255, 0.85);
-            transform: translateY(-2px);
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.1);
         }
         .article-card.pinned {
             border-left: 4px solid #c7a66b;
@@ -90,6 +100,10 @@
             align-items: center;
             gap: 0.5rem;
             flex-wrap: wrap;
+            transition: color 0.2s;
+        }
+        .article-card:hover .article-title {
+            color: #c7a66b;
         }
         .pinned-badge {
             display: inline-flex;
@@ -101,6 +115,11 @@
             padding: 0.2rem 0.6rem;
             border-radius: 20px;
             font-weight: 500;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
         .article-date { font-size: 0.75rem; color: #aa947c; margin-bottom: 0.8rem; }
         .article-excerpt { 
@@ -119,14 +138,29 @@
             font-weight: 500;
             margin-top: 0.5rem;
             cursor: pointer;
-            transition: color 0.2s;
+            transition: all 0.2s;
+            position: relative;
         }
-        .read-more:hover { color: #9b6f42; text-decoration: underline; }
-        .article-image { max-width: 100%; border-radius: 1rem; margin: 0.8rem 0; max-height: 240px; object-fit: cover; }
+        .read-more::after {
+            content: '→';
+            margin-left: 0.3rem;
+            transition: transform 0.2s;
+            display: inline-block;
+        }
+        .read-more:hover {
+            color: #9b6f42;
+        }
+        .read-more:hover::after {
+            transform: translateX(4px);
+        }
+        .article-image { max-width: 100%; border-radius: 1rem; margin: 0.8rem 0; max-height: 240px; object-fit: cover; transition: transform 0.3s ease; }
+        .article-card:hover .article-image {
+            transform: scale(1.02);
+        }
         
-        /* 详情页样式 */
+        /* 详情页动效 */
         .detail-container {
-            animation: fadeIn 0.3s ease;
+            animation: fadeInUp 0.4s ease;
         }
         .back-btn {
             display: inline-flex;
@@ -145,7 +179,7 @@
         }
         .back-btn:hover {
             background: #b58a4a;
-            transform: translateX(-3px);
+            transform: translateX(-5px);
         }
         .detail-title {
             font-size: 2.2rem;
@@ -153,6 +187,7 @@
             color: #3b2e24;
             margin-bottom: 1rem;
             line-height: 1.3;
+            animation: slideDown 0.4s ease;
         }
         .detail-meta {
             display: flex;
@@ -171,9 +206,10 @@
             color: #3c352e;
             white-space: pre-wrap;
             margin-bottom: 2rem;
+            animation: fadeIn 0.5s ease;
         }
-        /* 文章中嵌入的视频样式 */
-        .detail-content .bilibili-video {
+        .detail-content .bilibili-video,
+        .detail-content .external-link {
             margin: 1.5rem 0;
             position: relative;
             padding-bottom: 56.25%;
@@ -191,22 +227,44 @@
             border: none;
             border-radius: 0.75rem;
         }
-        .detail-image {
-            max-width: 100%;
-            border-radius: 1.5rem;
-            margin: 1rem 0 1.5rem 0;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .detail-actions {
+        .detail-content .external-link {
+            padding: 1rem;
+            background: rgba(199, 166, 107, 0.15);
+            border-radius: 0.75rem;
+            height: auto;
             display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-            margin-top: 2rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid rgba(199, 166, 107, 0.3);
+            align-items: center;
+            gap: 0.8rem;
         }
+        .detail-content .external-link a {
+            color: #c7a66b;
+            text-decoration: none;
+            word-break: break-all;
+            transition: color 0.2s;
+        }
+        .detail-content .external-link a:hover {
+            color: #9b6f42;
+            text-decoration: underline;
+        }
+        .detail-content .external-link .link-icon {
+            font-size: 1.2rem;
+        }
+        
+        /* 动画定义 */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
         }
         
@@ -217,6 +275,10 @@
             border-bottom: 2px solid rgba(240, 234, 226, 0.8); 
             position: relative; 
             cursor: pointer;
+            transition: all 0.3s;
+        }
+        .blog-header:hover {
+            transform: scale(1.01);
         }
         .blog-title { 
             font-size: 2.8rem; 
@@ -227,30 +289,41 @@
             color: transparent; 
             margin-bottom: 0.5rem; 
             text-shadow: 0 1px 2px rgba(255,255,255,0.8);
-            transition: all 0.2s;
+            transition: all 0.3s;
         }
-        .blog-title:hover { transform: scale(1.02); }
+        .blog-title:hover { 
+            transform: scale(1.02);
+            background: linear-gradient(135deg, #5a4a3a, #9b6f42);
+            background-clip: text;
+            -webkit-background-clip: text;
+        }
         .blog-author { font-size: 1.1rem; color: #5a4a3a; font-weight: 500; }
         
         .grid-layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; margin-bottom: 2rem; }
         .full-width { grid-column: 1 / -1; }
-        .section-title { font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem; color: #3e2c21; border-left: 5px solid #c7a66b; padding-left: 0.8rem; }
-        .featured-img { width: 100%; border-radius: 1rem; object-fit: cover; max-height: 280px; margin: 0.5rem 0; border: 1px solid rgba(255,255,255,0.7); }
-        .quote-text { font-size: 1.3rem; font-style: italic; color: #4a3b2e; padding: 0.8rem 0; }
+        .section-title { font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem; color: #3e2c21; border-left: 5px solid #c7a66b; padding-left: 0.8rem; transition: transform 0.2s; }
+        .section-title:hover { transform: translateX(5px); }
+        .featured-img { width: 100%; border-radius: 1rem; object-fit: cover; max-height: 280px; margin: 0.5rem 0; border: 1px solid rgba(255,255,255,0.7); transition: transform 0.3s ease; }
+        .card:hover .featured-img { transform: scale(1.02); }
+        .quote-text { font-size: 1.3rem; font-style: italic; color: #4a3b2e; padding: 0.8rem 0; transition: transform 0.2s; }
+        .card:hover .quote-text { transform: translateX(5px); }
         .quote-author { margin-top: 0.8rem; text-align: right; font-weight: 500; color: #b48c5c; }
-        .video-container { border-radius: 1rem; overflow: hidden; background: rgba(0,0,0,0.15); margin: 0.5rem 0; position: relative; padding-bottom: 56.25%; height: 0; }
+        .video-container { border-radius: 1rem; overflow: hidden; background: rgba(0,0,0,0.15); margin: 0.5rem 0; position: relative; padding-bottom: 56.25%; height: 0; transition: transform 0.3s; }
+        .video-container:hover { transform: scale(1.01); }
         .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; border-radius: 0.75rem; }
         .skills-list, .hobbies-list { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 0.8rem; }
-        .skill-tag, .hobby-tag { background: rgba(233, 224, 214, 0.85); backdrop-filter: blur(4px); padding: 0.3rem 1rem; border-radius: 40px; font-size: 0.85rem; color: #5a3f28; }
+        .skill-tag, .hobby-tag { background: rgba(233, 224, 214, 0.85); backdrop-filter: blur(4px); padding: 0.3rem 1rem; border-radius: 40px; font-size: 0.85rem; color: #5a3f28; transition: all 0.2s; }
+        .skill-tag:hover, .hobby-tag:hover { transform: scale(1.05); background: #c7a66b; color: white; cursor: default; }
         
         /* 编辑图标样式 */
         .edit-icon { position: absolute; top: 0.8rem; right: 0.8rem; background: rgba(255,255,255,0.85); backdrop-filter: blur(8px); border-radius: 2rem; padding: 0.3rem 0.8rem; font-size: 0.7rem; font-weight: 600; color: #5e3a22; border: 1px solid rgba(225, 207, 188, 0.8); cursor: pointer; z-index: 10; box-shadow: 0 1px 4px rgba(0,0,0,0.1); transition: all 0.2s; }
         .edit-icon:hover { background: rgba(255,255,255,0.95); transform: scale(1.02); }
         .relative-edit { position: relative; }
-        .add-article-btn { background: #c7a66b; color: white; border: none; padding: 0.5rem 1.2rem; border-radius: 2rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; margin-bottom: 1rem; display: inline-block; }
+        .add-article-btn { background: #c7a66b; color: white; border: none; padding: 0.5rem 1.2rem; border-radius: 2rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; margin-bottom: 1rem; display: inline-block; transition: all 0.2s; }
+        .add-article-btn:hover { background: #b58a4a; transform: scale(1.02); }
         .article-actions { margin-top: 1rem; display: flex; gap: 0.8rem; justify-content: flex-end; flex-wrap: wrap; }
         .article-action-btn { background: rgba(240, 234, 226, 0.85); backdrop-filter: blur(4px); border: none; padding: 0.3rem 1rem; border-radius: 2rem; font-size: 0.7rem; cursor: pointer; color: #5a3f28; transition: all 0.2s; }
-        .article-action-btn:hover { transform: scale(0.98); }
+        .article-action-btn:hover { transform: scale(0.98); background: #e4d9ce; }
         .article-action-btn.pin { background: rgba(199, 166, 107, 0.85); color: white; }
         .article-action-btn.unpin { background: rgba(170, 150, 120, 0.85); color: white; }
         .article-action-btn.delete { background: rgba(241, 222, 214, 0.85); color: #b55a3c; }
@@ -273,7 +346,8 @@
         .admin-btn, .token-btn { background: rgba(44, 42, 41, 0.85); backdrop-filter: blur(4px); border: none; padding: 0.6rem 1.5rem; border-radius: 60px; font-weight: 600; color: white; cursor: pointer; transition: all 0.2s; font-family: inherit; font-size: 0.9rem; }
         .admin-btn:hover, .token-btn:hover { background: #4a3b2e; transform: scale(0.97); }
         .token-btn { background: rgba(127, 94, 60, 0.85); padding: 0.4rem 1rem; font-size: 0.8rem; }
-        .bg-setting-btn { background: rgba(127, 94, 60, 0.85); backdrop-filter: blur(4px); padding: 0.4rem 1rem; font-size: 0.8rem; border-radius: 60px; color: white; cursor: pointer; border: none; font-weight: 500; }
+        .bg-setting-btn { background: rgba(127, 94, 60, 0.85); backdrop-filter: blur(4px); padding: 0.4rem 1rem; font-size: 0.8rem; border-radius: 60px; color: white; cursor: pointer; border: none; font-weight: 500; transition: all 0.2s; }
+        .bg-setting-btn:hover { background: #9b6f42; transform: scale(0.98); }
         .edit-mode-badge {
             position: fixed;
             top: 1rem;
@@ -289,6 +363,7 @@
             cursor: pointer;
             transition: all 0.2s;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            animation: slideDown 0.3s ease;
         }
         .edit-mode-badge:hover { background: #7f5e3c; transform: scale(1.02); }
         
@@ -302,7 +377,9 @@
             color: #aa9b8c; 
             background: rgba(254, 250, 245, 0.4);
             backdrop-filter: blur(8px);
+            transition: all 0.2s;
         }
+        footer:hover { color: #8b7a6b; }
         
         @media (max-width: 680px) { 
             .blog-content { padding: 1.5rem; } 
@@ -312,76 +389,78 @@
             .article-actions { justify-content: center; }
         }
         button { background: none; border: none; cursor: pointer; }
-        .loading { text-align: center; padding: 3rem; color: #aa9b8c; }
+        .loading { text-align: center; padding: 3rem; color: #aa9b8c; animation: pulse 1.5s infinite; }
         
-        /* 确认对话框样式 */
-        .confirm-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(8px);
-            z-index: 1000;
+        /* 文章编辑表单样式 */
+        .article-form {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: fadeIn 0.2s ease;
+            flex-direction: column;
+            gap: 1rem;
         }
-        .confirm-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(16px);
-            border-radius: 1.5rem;
-            padding: 1.5rem;
-            max-width: 400px;
-            width: 90%;
-            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            text-align: center;
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
         }
-        .confirm-title {
-            font-size: 1.2rem;
+        .form-label {
             font-weight: 600;
             color: #3e2c21;
-            margin-bottom: 1rem;
+            font-size: 0.9rem;
         }
-        .confirm-message {
-            color: #6b5a4a;
-            margin-bottom: 1.5rem;
-            line-height: 1.5;
+        .form-input, .form-textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #e4d9ce;
+            border-radius: 1rem;
+            font-family: inherit;
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.9);
+            transition: all 0.2s;
         }
-        .confirm-buttons {
+        .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #c7a66b;
+            box-shadow: 0 0 0 2px rgba(199, 166, 107, 0.2);
+            transform: scale(1.01);
+        }
+        .form-textarea {
+            min-height: 250px;
+            resize: vertical;
+        }
+        .form-hint {
+            font-size: 0.7rem;
+            color: #aa947c;
+        }
+        /* 快捷工具栏样式 */
+        .toolbar {
             display: flex;
-            gap: 1rem;
-            justify-content: center;
+            gap: 0.8rem;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
         }
-        .confirm-btn {
-            padding: 0.5rem 1.5rem;
+        .tool-btn {
+            background: rgba(199, 166, 107, 0.2);
+            border: 1px solid rgba(199, 166, 107, 0.4);
+            padding: 0.4rem 0.8rem;
             border-radius: 2rem;
-            font-weight: 500;
+            font-size: 0.8rem;
             cursor: pointer;
             transition: all 0.2s;
-            border: none;
+            color: #5a4a3a;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
         }
-        .confirm-btn.confirm {
-            background: #c7a66b;
-            color: white;
+        .tool-btn:hover {
+            background: rgba(199, 166, 107, 0.4);
+            transform: scale(1.02);
         }
-        .confirm-btn.confirm:hover {
-            background: #b58a4a;
-            transform: scale(0.98);
-        }
-        .confirm-btn.cancel {
-            background: #e9e0d6;
-            color: #5a3f28;
-        }
-        .confirm-btn.cancel:hover {
-            background: #ddd0c2;
+        .modal-container.large {
+            max-width: 700px;
+            width: 90%;
         }
         
-        /* 自定义模态框样式 */
-        .modal-overlay {
+        .confirm-overlay, .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -395,7 +474,7 @@
             justify-content: center;
             animation: fadeIn 0.2s ease;
         }
-        .modal-container {
+        .confirm-container, .modal-container {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(16px);
             border-radius: 1.5rem;
@@ -404,8 +483,9 @@
             width: 90%;
             box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.8);
+            animation: slideUp 0.3s ease;
         }
-        .modal-title {
+        .confirm-title, .modal-title {
             font-size: 1.3rem;
             font-weight: 600;
             color: #3e2c21;
@@ -413,25 +493,9 @@
             border-left: 4px solid #c7a66b;
             padding-left: 0.8rem;
         }
-        .modal-input, .modal-textarea {
-            width: 100%;
-            padding: 0.8rem;
-            border: 1px solid #e4d9ce;
-            border-radius: 1rem;
-            font-family: inherit;
-            font-size: 0.9rem;
-            background: rgba(255, 255, 255, 0.9);
-            margin-bottom: 1rem;
-            transition: all 0.2s;
-        }
-        .modal-textarea { min-height: 200px; resize: vertical; }
-        .modal-input:focus, .modal-textarea:focus {
-            outline: none;
-            border-color: #c7a66b;
-            box-shadow: 0 0 0 2px rgba(199, 166, 107, 0.2);
-        }
-        .modal-buttons { display: flex; gap: 0.8rem; justify-content: flex-end; }
-        .modal-btn {
+        .confirm-message { color: #6b5a4a; margin-bottom: 1.5rem; line-height: 1.5; }
+        .confirm-buttons, .modal-buttons { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem; }
+        .confirm-btn, .modal-btn {
             padding: 0.5rem 1.2rem;
             border-radius: 2rem;
             font-weight: 500;
@@ -439,24 +503,13 @@
             transition: all 0.2s;
             border: none;
         }
-        .modal-btn.confirm { background: #c7a66b; color: white; }
-        .modal-btn.confirm:hover { background: #b58a4a; transform: scale(0.98); }
-        .modal-btn.cancel { background: #e9e0d6; color: #5a3f28; }
-        .modal-btn.cancel:hover { background: #ddd0c2; }
-        .modal-hint { font-size: 0.75rem; color: #aa947c; margin-bottom: 1rem; }
+        .confirm-btn.confirm, .modal-btn.confirm { background: #c7a66b; color: white; }
+        .confirm-btn.confirm:hover, .modal-btn.confirm:hover { background: #b58a4a; transform: scale(0.98); }
+        .confirm-btn.cancel, .modal-btn.cancel { background: #e9e0d6; color: #5a3f28; }
+        .confirm-btn.cancel:hover, .modal-btn.cancel:hover { background: #ddd0c2; }
+        .modal-hint { font-size: 0.75rem; color: #aa947c; margin-top: 0.5rem; }
         
         .giscus-frame, .giscus { background: transparent !important; }
-        
-        /* B站视频插入提示 */
-        .video-insert-hint {
-            font-size: 0.7rem;
-            color: #b48c5c;
-            background: rgba(249, 244, 238, 0.6);
-            padding: 0.5rem;
-            border-radius: 0.5rem;
-            margin-top: 0.5rem;
-            text-align: center;
-        }
     </style>
 </head>
 <body>
@@ -466,7 +519,7 @@
         <div class="blog-content" id="blogRoot">
             <div class="loading">加载中...</div>
         </div>
-        <footer>© Astroptis · 数据存储于 GitHub 仓库</footer>
+        <footer>© Astroptis · 数据存储于 GitHub 仓库 | 留言板由 Giscus 提供</footer>
     </div>
 </div>
 
@@ -531,26 +584,22 @@
 
     let blogData = { ...DEFAULT_DATA };
 
-    // ==================== 哔哩哔哩视频转换函数 ====================
+    // ==================== 内容解析函数 ====================
     function convertToBilibiliEmbed(input) {
         if (!input) return null;
         let match;
-        // 匹配 BV号
         if ((match = input.match(/BV([a-zA-Z0-9]{10})/i))) {
             const bvid = "BV" + match[1];
             return `<div class="bilibili-video"><iframe src="https://player.bilibili.com/player.html?bvid=${bvid}&page=1&high_quality=1&autoplay=0" frameborder="0" allowfullscreen></iframe></div>`;
         }
-        // 匹配 av号
         if ((match = input.match(/av(\d+)/i))) {
             const avid = match[1];
             return `<div class="bilibili-video"><iframe src="https://player.bilibili.com/player.html?aid=${avid}&page=1&high_quality=1&autoplay=0" frameborder="0" allowfullscreen></iframe></div>`;
         }
-        // 匹配完整链接（BV）
         if ((match = input.match(/bilibili\.com\/video\/(BV[a-zA-Z0-9]+)/i))) {
             const bvid = match[1];
             return `<div class="bilibili-video"><iframe src="https://player.bilibili.com/player.html?bvid=${bvid}&page=1&high_quality=1&autoplay=0" frameborder="0" allowfullscreen></iframe></div>`;
         }
-        // 匹配完整链接（av）
         if ((match = input.match(/bilibili\.com\/video\/av(\d+)/i))) {
             const avid = match[1];
             return `<div class="bilibili-video"><iframe src="https://player.bilibili.com/player.html?aid=${avid}&page=1&high_quality=1&autoplay=0" frameborder="0" allowfullscreen></iframe></div>`;
@@ -558,43 +607,39 @@
         return null;
     }
 
-    // 解析文章内容中的视频标记，转换为嵌入代码
+    function convertToLinkEmbed(input) {
+        if (!input) return null;
+        const urlPattern = /(https?:\/\/[^\s]+)/;
+        if (urlPattern.test(input)) {
+            return `<div class="external-link"><span class="link-icon">🔗</span><a href="${escapeHtml(input)}" target="_blank" rel="noopener noreferrer">${escapeHtml(input)}</a></div>`;
+        }
+        return null;
+    }
+
     function parseArticleContent(content) {
         if (!content) return '';
         
-        // 匹配 [bilibili:xxx] 格式的标记
-        // 支持: [bilibili:BV1GJ411x7h7] 或 [bilibili:https://www.bilibili.com/video/BV1GJ411x7h7]
-        const regex = /\[bilibili:([^\]]+)\]/g;
+        const biliRegex = /\[bilibili:([^\]]+)\]/g;
+        const linkRegex = /\[link:([^\]]+)\]/g;
         
-        let processedContent = content;
-        let match;
-        let lastIndex = 0;
-        let result = '';
+        let result = content;
         
-        // 逐段处理，保留非标记文本
-        while ((match = regex.exec(content)) !== null) {
-            // 添加标记前的文本（转义）
-            result += escapeHtml(content.substring(lastIndex, match.index));
-            // 转换视频标记
-            const videoCode = convertToBilibiliEmbed(match[1]);
-            if (videoCode) {
-                result += videoCode;
-            } else {
-                // 无效的标记，显示为普通文本提示
-                result += `<span style="color:#b55a3c; font-size:0.8rem;">[无效视频: ${escapeHtml(match[1])}]</span>`;
-            }
-            lastIndex = regex.lastIndex;
-        }
-        // 添加剩余文本
-        result += escapeHtml(content.substring(lastIndex));
+        result = result.replace(biliRegex, (match, videoId) => {
+            const videoCode = convertToBilibiliEmbed(videoId);
+            return videoCode || `<span style="color:#b55a3c;">[无效视频: ${escapeHtml(videoId)}]</span>`;
+        });
         
-        // 处理换行
+        result = result.replace(linkRegex, (match, url) => {
+            const linkCode = convertToLinkEmbed(url);
+            return linkCode || `<span style="color:#b55a3c;">[无效链接: ${escapeHtml(url)}]</span>`;
+        });
+        
+        result = escapeHtml(result);
         result = result.replace(/\n/g, '<br>');
         
         return result;
     }
 
-    // 获取侧边栏视频嵌入代码
     function getSideVideoEmbedCode() {
         if (blogData.videoEmbed) {
             const converted = convertToBilibiliEmbed(blogData.videoEmbed);
@@ -603,7 +648,236 @@
         return convertToBilibiliEmbed("BV1GJ411x7h7");
     }
 
-    // ==================== 确认对话框 ====================
+    // ==================== 文章编辑表单（带快捷工具栏） ====================
+    function insertAtCursor(textarea, insertText) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const value = textarea.value;
+        const newValue = value.substring(0, start) + insertText + value.substring(end);
+        textarea.value = newValue;
+        textarea.focus();
+        textarea.selectionStart = textarea.selectionEnd = start + insertText.length;
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    function showArticleForm(article, onSave) {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal-container large';
+        
+        const titleEl = document.createElement('div');
+        titleEl.className = 'modal-title';
+        titleEl.textContent = article ? '✏️ 编辑文章' : '📝 添加新文章';
+        modal.appendChild(titleEl);
+        
+        const form = document.createElement('div');
+        form.className = 'article-form';
+        
+        // 标题输入
+        const titleGroup = document.createElement('div');
+        titleGroup.className = 'form-group';
+        titleGroup.innerHTML = '<div class="form-label">文章标题 *</div>';
+        const titleInput = document.createElement('input');
+        titleInput.type = 'text';
+        titleInput.className = 'form-input';
+        titleInput.value = article ? article.title : '';
+        titleInput.placeholder = '输入文章标题...';
+        titleGroup.appendChild(titleInput);
+        form.appendChild(titleGroup);
+        
+        // 正文输入（带快捷工具栏）
+        const contentGroup = document.createElement('div');
+        contentGroup.className = 'form-group';
+        contentGroup.innerHTML = '<div class="form-label">文章正文 *</div>';
+        
+        // 快捷工具栏
+        const toolbar = document.createElement('div');
+        toolbar.className = 'toolbar';
+        
+        const linkBtn = document.createElement('button');
+        linkBtn.className = 'tool-btn';
+        linkBtn.innerHTML = '🔗 插入链接';
+        linkBtn.type = 'button';
+        
+        const bilibiliBtn = document.createElement('button');
+        bilibiliBtn.className = 'tool-btn';
+        bilibiliBtn.innerHTML = '🎬 插入B站视频';
+        bilibiliBtn.type = 'button';
+        
+        toolbar.appendChild(linkBtn);
+        toolbar.appendChild(bilibiliBtn);
+        contentGroup.appendChild(toolbar);
+        
+        const contentInput = document.createElement('textarea');
+        contentInput.className = 'form-textarea';
+        contentInput.value = article ? article.content : '';
+        contentInput.placeholder = '输入文章内容...\n\n点击上方按钮可快捷插入链接或B站视频';
+        contentGroup.appendChild(contentInput);
+        
+        const hint = document.createElement('div');
+        hint.className = 'form-hint';
+        hint.innerHTML = '💡 支持格式：<code>[bilibili:BV号]</code> 插入视频 &nbsp;|&nbsp; <code>[link:网址]</code> 插入链接';
+        contentGroup.appendChild(hint);
+        
+        form.appendChild(contentGroup);
+        
+        // 封面图片URL
+        const imageGroup = document.createElement('div');
+        imageGroup.className = 'form-group';
+        imageGroup.innerHTML = '<div class="form-label">封面图片URL</div><div class="form-hint">留空则不显示图片</div>';
+        const imageInput = document.createElement('input');
+        imageInput.type = 'text';
+        imageInput.className = 'form-input';
+        imageInput.value = article ? (article.imageUrl || '') : '';
+        imageInput.placeholder = 'https://...';
+        imageGroup.appendChild(imageInput);
+        form.appendChild(imageGroup);
+        
+        modal.appendChild(form);
+        
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.className = 'modal-buttons';
+        
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'modal-btn confirm';
+        confirmBtn.textContent = article ? '保存修改' : '发布文章';
+        confirmBtn.onclick = () => {
+            const newTitle = titleInput.value.trim();
+            if (!newTitle) {
+                showToast('请填写文章标题', '#b55a3c');
+                return;
+            }
+            const newContent = contentInput.value;
+            if (!newContent) {
+                showToast('请填写文章正文', '#b55a3c');
+                return;
+            }
+            const newImageUrl = imageInput.value.trim();
+            const finalImageUrl = newImageUrl && newImageUrl !== '' ? newImageUrl : '';
+            overlay.remove();
+            onSave(newTitle, newContent, finalImageUrl);
+        };
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'modal-btn cancel';
+        cancelBtn.textContent = '取消';
+        cancelBtn.onclick = () => overlay.remove();
+        
+        buttonsDiv.appendChild(confirmBtn);
+        buttonsDiv.appendChild(cancelBtn);
+        modal.appendChild(buttonsDiv);
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        
+        // 快捷按钮事件
+        linkBtn.onclick = () => {
+            const url = prompt('请输入要插入的网页链接（URL）:', 'https://');
+            if (url && url.trim()) {
+                const insertText = `[link:${url.trim()}]`;
+                insertAtCursor(contentInput, insertText);
+            }
+        };
+        
+        bilibiliBtn.onclick = () => {
+            const videoId = prompt('请输入哔哩哔哩视频的 BV 号或链接:\n\n支持格式：\n• BV号 (如 BV1GJ411x7h7)\n• 视频链接 (如 https://www.bilibili.com/video/BV1GJ411x7h7)\n• av号 (如 av123456)', 'BV1GJ411x7h7');
+            if (videoId && videoId.trim()) {
+                const insertText = `[bilibili:${videoId.trim()}]`;
+                insertAtCursor(contentInput, insertText);
+            }
+        };
+        
+        setTimeout(() => titleInput.focus(), 50);
+    }
+
+    // ==================== 辅助函数 ====================
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    function showToast(msg, bgColor) {
+        const toast = document.createElement('div');
+        toast.textContent = msg;
+        toast.style.cssText = `position:fixed; bottom:20px; left:20px; background:${bgColor}; color:white; padding:8px 18px; border-radius:40px; font-size:0.8rem; z-index:1001; box-shadow:0 2px 10px rgba(0,0,0,0.2); animation: fadeInUp 0.3s ease;`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    function showModal(title, value, type, callback) {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        const modal = document.createElement('div');
+        modal.className = 'modal-container';
+        const titleEl = document.createElement('div');
+        titleEl.className = 'modal-title';
+        titleEl.textContent = title;
+        modal.appendChild(titleEl);
+        
+        let inputEl;
+        if (type === 'textarea') {
+            inputEl = document.createElement('textarea');
+            inputEl.className = 'modal-textarea';
+            inputEl.value = value || '';
+            inputEl.placeholder = '请输入内容...\n\n💡 插入B站视频：使用 [bilibili:BV号] 格式\n💡 插入链接：使用 [link:URL] 格式';
+        } else if (type === 'list') {
+            inputEl = document.createElement('textarea');
+            inputEl.className = 'modal-textarea';
+            inputEl.value = value || '';
+            inputEl.placeholder = '用英文逗号分隔多个项目\n例如：阅读, 旅行, 音乐';
+            const hint = document.createElement('div');
+            hint.className = 'modal-hint';
+            hint.textContent = '💡 用英文逗号分隔多个项目';
+            modal.appendChild(hint);
+        } else {
+            inputEl = document.createElement('input');
+            inputEl.type = 'text';
+            inputEl.className = 'modal-input';
+            inputEl.value = value || '';
+            inputEl.placeholder = '请输入内容...';
+        }
+        modal.appendChild(inputEl);
+        
+        if (type === 'textarea' && (title.includes('正文') || title.includes('编辑'))) {
+            const hint = document.createElement('div');
+            hint.className = 'modal-hint';
+            hint.innerHTML = '💡 插入B站视频：<code>[bilibili:BV号]</code> &nbsp;|&nbsp; 插入链接：<code>[link:网址]</code>';
+            modal.appendChild(hint);
+        }
+        
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.className = 'modal-buttons';
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'modal-btn confirm';
+        confirmBtn.textContent = '确定';
+        confirmBtn.onclick = () => {
+            overlay.remove();
+            callback(inputEl.value);
+        };
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'modal-btn cancel';
+        cancelBtn.textContent = '取消';
+        cancelBtn.onclick = () => {
+            overlay.remove();
+            callback(null);
+        };
+        buttonsDiv.appendChild(confirmBtn);
+        buttonsDiv.appendChild(cancelBtn);
+        modal.appendChild(buttonsDiv);
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        setTimeout(() => inputEl.focus(), 50);
+        if (type !== 'textarea' && type !== 'list') {
+            inputEl.addEventListener('keypress', (e) => { if (e.key === 'Enter') confirmBtn.click(); });
+        }
+    }
+
     function showConfirm(title, message, onConfirm) {
         const overlay = document.createElement('div');
         overlay.className = 'confirm-overlay';
@@ -647,94 +921,6 @@
         document.body.appendChild(overlay);
     }
 
-    // ==================== 辅助函数 ====================
-    function escapeHtml(str) {
-        if (!str) return '';
-        return String(str).replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
-    }
-
-    function showToast(msg, bgColor) {
-        const toast = document.createElement('div');
-        toast.textContent = msg;
-        toast.style.cssText = `position:fixed; bottom:20px; left:20px; background:${bgColor}; color:white; padding:8px 18px; border-radius:40px; font-size:0.8rem; z-index:1001; box-shadow:0 2px 10px rgba(0,0,0,0.2);`;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-    }
-
-    function showModal(title, value, type, callback) {
-        const overlay = document.createElement('div');
-        overlay.className = 'modal-overlay';
-        const modal = document.createElement('div');
-        modal.className = 'modal-container';
-        const titleEl = document.createElement('div');
-        titleEl.className = 'modal-title';
-        titleEl.textContent = title;
-        modal.appendChild(titleEl);
-        
-        let inputEl;
-        if (type === 'textarea') {
-            inputEl = document.createElement('textarea');
-            inputEl.className = 'modal-textarea';
-            inputEl.value = value || '';
-            inputEl.placeholder = '请输入内容...\n\n💡 插入B站视频：使用 [bilibili:BV号] 格式，例如 [bilibili:BV1GJ411x7h7]';
-        } else if (type === 'list') {
-            inputEl = document.createElement('textarea');
-            inputEl.className = 'modal-textarea';
-            inputEl.value = value || '';
-            inputEl.placeholder = '用英文逗号分隔多个项目\n例如：阅读, 旅行, 音乐';
-            const hint = document.createElement('div');
-            hint.className = 'modal-hint';
-            hint.textContent = '💡 用英文逗号分隔多个项目';
-            modal.appendChild(hint);
-        } else {
-            inputEl = document.createElement('input');
-            inputEl.type = 'text';
-            inputEl.className = 'modal-input';
-            inputEl.value = value || '';
-            inputEl.placeholder = '请输入内容...';
-        }
-        modal.appendChild(inputEl);
-        
-        // 如果是编辑文章正文，添加视频插入提示
-        if (type === 'textarea' && title.includes('正文')) {
-            const hint = document.createElement('div');
-            hint.className = 'video-insert-hint';
-            hint.innerHTML = '💡 插入B站视频：使用 <code>[bilibili:BV号]</code> 格式<br>例如：<code>[bilibili:BV1GJ411x7h7]</code>';
-            modal.appendChild(hint);
-        }
-        
-        const buttonsDiv = document.createElement('div');
-        buttonsDiv.className = 'modal-buttons';
-        const confirmBtn = document.createElement('button');
-        confirmBtn.className = 'modal-btn confirm';
-        confirmBtn.textContent = '确定';
-        confirmBtn.onclick = () => {
-            overlay.remove();
-            callback(inputEl.value);
-        };
-        const cancelBtn = document.createElement('button');
-        cancelBtn.className = 'modal-btn cancel';
-        cancelBtn.textContent = '取消';
-        cancelBtn.onclick = () => {
-            overlay.remove();
-            callback(null);
-        };
-        buttonsDiv.appendChild(confirmBtn);
-        buttonsDiv.appendChild(cancelBtn);
-        modal.appendChild(buttonsDiv);
-        overlay.appendChild(modal);
-        document.body.appendChild(overlay);
-        setTimeout(() => inputEl.focus(), 50);
-        if (type !== 'textarea' && type !== 'list') {
-            inputEl.addEventListener('keypress', (e) => { if (e.key === 'Enter') confirmBtn.click(); });
-        }
-    }
-
     function showPasswordModal(callback) {
         showModal('🔑 管理员验证', '', 'text', (pwd) => {
             if (pwd === ADMIN_PASSWORD) callback(true);
@@ -749,7 +935,145 @@
         });
     }
 
-    // 增量更新 DOM 元素
+    // GitHub API 函数
+    function base64Decode(str) {
+        try { return decodeURIComponent(escape(atob(str))); } catch (e) { return atob(str); }
+    }
+
+    async function getFileSha() {
+        const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}?ref=${GITHUB_CONFIG.branch}`;
+        const res = await fetch(url);
+        if (res.status === 404) return null;
+        if (!res.ok) throw new Error(`获取文件失败: ${res.status}`);
+        const data = await res.json();
+        return { sha: data.sha, content: data.content };
+    }
+
+    async function saveToGitHub(data) {
+        if (!githubToken) throw new Error("无令牌，请先登录管理员");
+        const jsonStr = JSON.stringify(data, null, 2);
+        const content = btoa(unescape(encodeURIComponent(jsonStr)));
+        let sha = null;
+        try {
+            const file = await getFileSha();
+            if (file) sha = file.sha;
+        } catch (e) { }
+        const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`;
+        const body = { message: `更新博客数据 ${new Date().toLocaleString()}`, content: content, branch: GITHUB_CONFIG.branch };
+        if (sha) body.sha = sha;
+        const res = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${githubToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        if (res.status === 401) {
+            localStorage.removeItem(TOKEN_STORAGE_KEY);
+            throw new Error("GitHub Token 无效或已过期，请重新输入");
+        }
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(`保存失败: ${err.message || res.status}`);
+        }
+        return true;
+    }
+
+    async function saveAllData() {
+        if (!editMode) return;
+        try {
+            await saveToGitHub(blogData);
+            showToast("✅ 数据已保存到 GitHub", "#2c2a29");
+        } catch (err) {
+            console.error(err);
+            showToast("❌ 保存失败：" + err.message, "#b55a3c");
+            if (err.message.includes("Token 无效")) {
+                showTokenModal((newToken) => {
+                    if (newToken) {
+                        localStorage.setItem(TOKEN_STORAGE_KEY, newToken);
+                        githubToken = newToken;
+                        saveAllData();
+                    } else disableEditMode();
+                });
+            }
+            throw err;
+        }
+    }
+
+    function applyBackground() {
+        if (blogData.backgroundImage && blogData.backgroundImage.trim() !== "") {
+            document.body.style.backgroundImage = `url(${blogData.backgroundImage})`;
+        } else {
+            document.body.style.backgroundImage = "";
+            document.body.style.backgroundColor = "#f5f3ef";
+        }
+    }
+
+    // 文章操作
+    function addArticle() {
+        showArticleForm(null, (title, content, imageUrl) => {
+            const newArticle = {
+                id: Date.now() + '-' + Math.random().toString(36).substr(2, 6),
+                title: title,
+                content: content,
+                date: new Date().toISOString().slice(0, 10),
+                imageUrl: imageUrl,
+                pinned: false
+            };
+            blogData.articles.unshift(newArticle);
+            saveAllData().then(() => {
+                if (currentView === 'list') reorderArticlesList();
+                else renderListView();
+            });
+        });
+    }
+
+    function editArticle(articleId) {
+        const article = blogData.articles.find(a => a.id === articleId);
+        if (!article) return;
+        showArticleForm(article, (title, content, imageUrl) => {
+            article.title = title;
+            article.content = content;
+            article.imageUrl = imageUrl;
+            article.date = new Date().toISOString().slice(0, 10);
+            saveAllData().then(() => {
+                if (currentView === 'detail' && currentArticleId === articleId) {
+                    updateDetailView(article);
+                } else if (currentView === 'list') {
+                    updateArticleInList(articleId, article);
+                }
+            });
+        });
+    }
+
+    function deleteArticle(articleId) {
+        blogData.articles = blogData.articles.filter(a => a.id !== articleId);
+        saveAllData().then(() => {
+            if (currentView === 'detail' && currentArticleId === articleId) {
+                currentView = 'list';
+                currentArticleId = null;
+                renderListView();
+            } else if (currentView === 'list') {
+                const card = document.querySelector(`.article-card[data-id="${articleId}"]`);
+                if (card) card.remove();
+            }
+        });
+    }
+
+    function togglePinArticle(articleId) {
+        const article = blogData.articles.find(a => a.id === articleId);
+        if (article) {
+            article.pinned = !article.pinned;
+            saveAllData().then(() => {
+                if (currentView === 'list') reorderArticlesList();
+                else if (currentView === 'detail') {
+                    const metaEl = document.querySelector('.detail-meta');
+                    if (metaEl) metaEl.innerHTML = `<span>📅 ${article.date}</span>${article.pinned ? '<span>📌 置顶文章</span>' : ''}`;
+                }
+                showToast(article.pinned ? "📌 文章已置顶" : "📍 文章已取消置顶", "#2c2a29");
+            });
+        }
+    }
+
+    // 增量更新 DOM
     function updateElementText(selector, newText) {
         const el = document.querySelector(selector);
         if (el) el.textContent = newText;
@@ -911,152 +1235,59 @@
         });
     }
 
-    // GitHub API 函数
-    function base64Decode(str) {
-        try { return decodeURIComponent(escape(atob(str))); } catch (e) { return atob(str); }
-    }
-
-    async function getFileSha() {
-        const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}?ref=${GITHUB_CONFIG.branch}`;
-        const res = await fetch(url);
-        if (res.status === 404) return null;
-        if (!res.ok) throw new Error(`获取文件失败: ${res.status}`);
-        const data = await res.json();
-        return { sha: data.sha, content: data.content };
-    }
-
-    async function saveToGitHub(data) {
-        if (!githubToken) throw new Error("无令牌，请先登录管理员");
-        const jsonStr = JSON.stringify(data, null, 2);
-        const content = btoa(unescape(encodeURIComponent(jsonStr)));
-        let sha = null;
-        try {
-            const file = await getFileSha();
-            if (file) sha = file.sha;
-        } catch (e) { }
-        const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`;
-        const body = { message: `更新博客数据 ${new Date().toLocaleString()}`, content: content, branch: GITHUB_CONFIG.branch };
-        if (sha) body.sha = sha;
-        const res = await fetch(url, {
-            method: 'PUT',
-            headers: { 'Authorization': `Bearer ${githubToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-        if (res.status === 401) {
-            localStorage.removeItem(TOKEN_STORAGE_KEY);
-            throw new Error("GitHub Token 无效或已过期，请重新输入");
-        }
-        if (!res.ok) {
-            const err = await res.json();
-            throw new Error(`保存失败: ${err.message || res.status}`);
-        }
-        return true;
-    }
-
-    async function saveAllData() {
-        if (!editMode) return;
-        try {
-            await saveToGitHub(blogData);
-            showToast("✅ 数据已保存到 GitHub", "#2c2a29");
-        } catch (err) {
-            console.error(err);
-            showToast("❌ 保存失败：" + err.message, "#b55a3c");
-            if (err.message.includes("Token 无效")) {
-                showTokenModal((newToken) => {
-                    if (newToken) {
-                        localStorage.setItem(TOKEN_STORAGE_KEY, newToken);
-                        githubToken = newToken;
-                        saveAllData();
-                    } else disableEditMode();
-                });
-            }
-            throw err;
-        }
-    }
-
-    function applyBackground() {
-        if (blogData.backgroundImage && blogData.backgroundImage.trim() !== "") {
-            document.body.style.backgroundImage = `url(${blogData.backgroundImage})`;
-            document.body.style.backgroundSize = "cover";
-            document.body.style.backgroundAttachment = "fixed";
-            document.body.style.backgroundPosition = "center";
-        } else {
-            document.body.style.backgroundImage = "";
-            document.body.style.backgroundColor = "#f5f3ef";
-        }
-    }
-
-    // 编辑函数（增量更新）
-    function updateField(fieldKey, newValue) {
-        if (newValue === null) return;
-        if (fieldKey === 'blogTitle') blogData.blogTitle = newValue;
-        else if (fieldKey === 'author') blogData.author = newValue;
-        else if (fieldKey === 'about') blogData.about = newValue;
-        else if (fieldKey === 'imageUrl') blogData.imageUrl = newValue;
-        else if (fieldKey === 'quoteText') blogData.quoteText = newValue;
-        else if (fieldKey === 'quoteAuthor') blogData.quoteAuthor = newValue;
-        else if (fieldKey === 'videoEmbed') blogData.videoEmbed = newValue;
-        else if (fieldKey === 'videoIntro') blogData.videoIntro = newValue;
-        else if (fieldKey === 'skills') blogData.skills = newValue;
-        else if (fieldKey === 'hobbies') blogData.hobbies = newValue;
-        else if (fieldKey === 'backgroundImage') blogData.backgroundImage = newValue;
-        else return;
-        
-        if (fieldKey === 'backgroundImage') applyBackground();
-        
-        // 增量更新 DOM
-        if (fieldKey === 'blogTitle') updateElementText('.blog-title', newValue);
-        else if (fieldKey === 'author') updateElementText('.blog-author', '✍️ ' + newValue);
-        else if (fieldKey === 'about') {
-            const aboutEl = document.querySelector('.card.full-width p');
-            if (aboutEl) aboutEl.innerHTML = escapeHtml(newValue).replace(/\n/g, '<br>');
-        } else if (fieldKey === 'imageUrl') {
-            const imgEl = document.querySelector('.featured-img');
-            if (imgEl) imgEl.src = newValue;
-        } else if (fieldKey === 'quoteText') {
-            const quoteEl = document.querySelector('.quote-text');
-            if (quoteEl) quoteEl.innerHTML = `“ ${escapeHtml(newValue)} ”`;
-        } else if (fieldKey === 'quoteAuthor') {
-            const authorEl = document.querySelector('.quote-author');
-            if (authorEl) authorEl.innerHTML = `—— ${escapeHtml(newValue)}`;
-        } else if (fieldKey === 'skills') {
-            const skillsContainer = document.querySelector('.skills-list');
-            if (skillsContainer) {
-                const skillsArray = newValue.split(',').map(s => s.trim()).filter(s => s);
-                skillsContainer.innerHTML = skillsArray.length ? skillsArray.map(s => `<span class="skill-tag">${escapeHtml(s)}</span>`).join('') : '<span style="color:#aa947c;">暂无技能</span>';
-            }
-        } else if (fieldKey === 'hobbies') {
-            const hobbiesContainer = document.querySelector('.hobbies-list');
-            if (hobbiesContainer) {
-                const hobbiesArray = newValue.split(',').map(h => h.trim()).filter(h => h);
-                hobbiesContainer.innerHTML = hobbiesArray.length ? hobbiesArray.map(h => `<span class="hobby-tag">${escapeHtml(h)}</span>`).join('') : '<span style="color:#aa947c;">暂无喜好</span>';
-            }
-        } else if (fieldKey === 'videoIntro') {
-            const introEl = document.querySelector('.video-intro');
-            if (introEl) introEl.innerHTML = escapeHtml(newValue);
-            else if (newValue) {
-                const container = document.querySelector('.card.full-width.relative-edit');
-                const videoContainer = document.getElementById('biliVideoContainer');
-                if (container && videoContainer) {
-                    const introDiv = document.createElement('div');
-                    introDiv.className = 'video-intro';
-                    introDiv.innerHTML = escapeHtml(newValue);
-                    videoContainer.insertAdjacentElement('beforebegin', introDiv);
-                }
-            }
-        } else if (fieldKey === 'videoEmbed') {
-            const videoContainer = document.getElementById('biliVideoContainer');
-            if (videoContainer) videoContainer.innerHTML = getSideVideoEmbedCode();
-        }
-        
-        saveAllData();
-    }
-
     function editFieldHandler(fieldKey, label, type = 'text') {
         const current = blogData[fieldKey];
         const modalType = (fieldKey === 'skills' || fieldKey === 'hobbies') ? 'list' : (fieldKey === 'about' || fieldKey === 'videoIntro') ? 'textarea' : type;
         showModal(`✏️ 编辑${label}`, current, modalType, (newVal) => {
-            if (newVal !== null && newVal !== current) updateField(fieldKey, newVal);
+            if (newVal !== null && newVal !== current) {
+                blogData[fieldKey] = newVal;
+                if (fieldKey === 'backgroundImage') applyBackground();
+                saveAllData();
+                // 增量更新 DOM
+                if (fieldKey === 'blogTitle') updateElementText('.blog-title', newVal);
+                else if (fieldKey === 'author') updateElementText('.blog-author', '✍️ ' + newVal);
+                else if (fieldKey === 'about') {
+                    const aboutEl = document.querySelector('.card.full-width p');
+                    if (aboutEl) aboutEl.innerHTML = escapeHtml(newVal).replace(/\n/g, '<br>');
+                } else if (fieldKey === 'imageUrl') {
+                    const imgEl = document.querySelector('.featured-img');
+                    if (imgEl) imgEl.src = newVal;
+                } else if (fieldKey === 'quoteText') {
+                    const quoteEl = document.querySelector('.quote-text');
+                    if (quoteEl) quoteEl.innerHTML = `“ ${escapeHtml(newVal)} ”`;
+                } else if (fieldKey === 'quoteAuthor') {
+                    const authorEl = document.querySelector('.quote-author');
+                    if (authorEl) authorEl.innerHTML = `—— ${escapeHtml(newVal)}`;
+                } else if (fieldKey === 'skills') {
+                    const skillsContainer = document.querySelector('.skills-list');
+                    if (skillsContainer) {
+                        const skillsArray = newVal.split(',').map(s => s.trim()).filter(s => s);
+                        skillsContainer.innerHTML = skillsArray.length ? skillsArray.map(s => `<span class="skill-tag">${escapeHtml(s)}</span>`).join('') : '<span style="color:#aa947c;">暂无技能</span>';
+                    }
+                } else if (fieldKey === 'hobbies') {
+                    const hobbiesContainer = document.querySelector('.hobbies-list');
+                    if (hobbiesContainer) {
+                        const hobbiesArray = newVal.split(',').map(h => h.trim()).filter(h => h);
+                        hobbiesContainer.innerHTML = hobbiesArray.length ? hobbiesArray.map(h => `<span class="hobby-tag">${escapeHtml(h)}</span>`).join('') : '<span style="color:#aa947c;">暂无喜好</span>';
+                    }
+                } else if (fieldKey === 'videoIntro') {
+                    const introEl = document.querySelector('.video-intro');
+                    if (introEl) introEl.innerHTML = escapeHtml(newVal);
+                    else if (newVal) {
+                        const container = document.querySelector('.card.full-width.relative-edit');
+                        const videoContainer = document.getElementById('biliVideoContainer');
+                        if (container && videoContainer) {
+                            const introDiv = document.createElement('div');
+                            introDiv.className = 'video-intro';
+                            introDiv.innerHTML = escapeHtml(newVal);
+                            videoContainer.insertAdjacentElement('beforebegin', introDiv);
+                        }
+                    }
+                } else if (fieldKey === 'videoEmbed') {
+                    const videoContainer = document.getElementById('biliVideoContainer');
+                    if (videoContainer) videoContainer.innerHTML = getSideVideoEmbedCode();
+                }
+            }
         });
     }
 
@@ -1064,8 +1295,7 @@
         const current = blogData.backgroundImage || "";
         const newVal = prompt("🎨 更换网页背景图片\n请输入图片 URL（留空则恢复默认背景）\n\n当前: " + (current || "无"), current);
         if (newVal !== null) {
-            if (newVal.trim() === "") blogData.backgroundImage = "";
-            else blogData.backgroundImage = newVal.trim();
+            blogData.backgroundImage = newVal.trim() === "" ? "" : newVal.trim();
             applyBackground();
             saveAllData();
         }
@@ -1128,91 +1358,6 @@
         script.setAttribute('crossorigin', 'anonymous');
         script.async = true;
         container.appendChild(script);
-    }
-
-    // 文章操作
-    function addArticle() {
-        showModal('📝 添加新文章', '', 'textarea', (title) => {
-            if (!title) return;
-            showModal('📝 文章正文', '', 'textarea', (content) => {
-                if (content === null) return;
-                showModal('🖼️ 封面图片URL', '留空则不显示图片', 'text', (imageUrl) => {
-                    let finalImageUrl = '';
-                    if (imageUrl && imageUrl.trim() && imageUrl.trim() !== '留空则不显示图片') finalImageUrl = imageUrl.trim();
-                    const newArticle = {
-                        id: Date.now() + '-' + Math.random().toString(36).substr(2, 6),
-                        title: title.trim(),
-                        content: content.trim(),
-                        date: new Date().toISOString().slice(0, 10),
-                        imageUrl: finalImageUrl,
-                        pinned: false
-                    };
-                    blogData.articles.unshift(newArticle);
-                    saveAllData().then(() => {
-                        if (currentView === 'list') reorderArticlesList();
-                        else renderListView();
-                    });
-                });
-            });
-        });
-    }
-
-    function editArticle(articleId) {
-        const article = blogData.articles.find(a => a.id === articleId);
-        if (!article) return;
-        showModal('✏️ 编辑标题', article.title, 'text', (newTitle) => {
-            if (newTitle === null) return;
-            showModal('✏️ 编辑正文', article.content, 'textarea', (newContent) => {
-                if (newContent === null) return;
-                showModal('🖼️ 编辑图片URL', article.imageUrl || '留空则不显示图片', 'text', (newImage) => {
-                    let finalImageUrl = article.imageUrl;
-                    if (newImage !== null) {
-                        if (newImage.trim() === '' || newImage.trim() === '留空则不显示图片') finalImageUrl = '';
-                        else finalImageUrl = newImage.trim();
-                    }
-                    article.title = newTitle.trim();
-                    article.content = newContent.trim();
-                    article.imageUrl = finalImageUrl;
-                    article.date = new Date().toISOString().slice(0, 10);
-                    saveAllData().then(() => {
-                        if (currentView === 'detail' && currentArticleId === articleId) {
-                            updateDetailView(article);
-                        } else if (currentView === 'list') {
-                            updateArticleInList(articleId, article);
-                        }
-                    });
-                });
-            });
-        });
-    }
-
-    function deleteArticle(articleId) {
-        blogData.articles = blogData.articles.filter(a => a.id !== articleId);
-        saveAllData().then(() => {
-            if (currentView === 'detail' && currentArticleId === articleId) {
-                currentView = 'list';
-                currentArticleId = null;
-                renderListView();
-            } else if (currentView === 'list') {
-                const card = document.querySelector(`.article-card[data-id="${articleId}"]`);
-                if (card) card.remove();
-            }
-        });
-    }
-
-    function togglePinArticle(articleId) {
-        const article = blogData.articles.find(a => a.id === articleId);
-        if (article) {
-            article.pinned = !article.pinned;
-            saveAllData().then(() => {
-                if (currentView === 'list') reorderArticlesList();
-                else if (currentView === 'detail') {
-                    const metaEl = document.querySelector('.detail-meta');
-                    if (metaEl) metaEl.innerHTML = `<span>📅 ${article.date}</span>${article.pinned ? '<span>📌 置顶文章</span>' : ''}`;
-                }
-                showToast(article.pinned ? "📌 文章已置顶" : "📍 文章已取消置顶", "#2c2a29");
-            });
-        }
     }
 
     // 渲染函数
@@ -1342,7 +1487,7 @@
                 <div class="card relative-edit"><h2 class="section-title">❤️ 个人喜好</h2><div class="hobbies-list">${hobbiesArray.length ? hobbiesArray.map(h => `<span class="hobby-tag">${escapeHtml(h)}</span>`).join('') : '<span style="color:#aa947c;">暂无喜好</span>'}</div>${editMode ? `<div class="edit-icon" data-edit-field="hobbies" data-label="喜好列表(逗号分隔)">✎ 编辑喜好</div>` : ''}</div>
             </div>
             <div class="grid-layout"><div class="card full-width relative-edit">
-                <h2 class="section-title">🎬 一些视频</h2>
+                <h2 class="section-title">🎬 哔哩哔哩 · 影像诗</h2>
                 ${blogData.videoIntro ? `<div class="video-intro">${escapeHtml(blogData.videoIntro)}</div>` : ''}
                 <div class="video-container" id="biliVideoContainer"></div>
                 <div class="bili-tip">💡 管理员登录后点击右上角铅笔更换 B站视频</div>
