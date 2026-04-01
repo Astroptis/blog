@@ -204,11 +204,10 @@
             font-size: 1.05rem;
             line-height: 1.8;
             color: #3c352e;
-            white-space: pre-wrap;
             margin-bottom: 2rem;
             animation: fadeIn 0.5s ease;
         }
-        /* 文章中嵌入的视频样式 - 修复视频显示问题 */
+        /* 文章中嵌入的视频样式 */
         .detail-content .bilibili-video {
             margin: 1.5rem 0;
             position: relative;
@@ -547,14 +546,14 @@
         <div class="blog-content" id="blogRoot">
             <div class="loading">加载中...</div>
         </div>
-        <footer>© Astroptis · 数据存储于 GitHub 仓库 | 留言板由 Giscus 提供</footer>
+        <footer>© Astroptis · 数据存储于 GitHub 仓库</footer>
     </div>
 </div>
 
 <script>
     // ==================== GitHub 配置 ====================
     const GITHUB_CONFIG = {
-        owner: 'tianlu464',
+        owner: 'Astroptis',
         repo: 'blog',
         path: 'data.json',
         branch: 'main'
@@ -612,7 +611,8 @@
 
     let blogData = { ...DEFAULT_DATA };
 
-    // ==================== 内容解析函数 ====================
+    // ==================== 内容解析函数（核心修复） ====================
+    // 转换B站视频为嵌入代码
     function convertToBilibiliEmbed(input) {
         if (!input) return null;
         let match;
@@ -635,44 +635,61 @@
         return null;
     }
 
+    // 转换链接为可点击卡片
     function convertToLinkEmbed(input) {
         if (!input) return null;
         // 验证是否为有效URL
-        const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
-        if (urlPattern.test(input) || input.startsWith('http://') || input.startsWith('https://')) {
-            let url = input;
-            if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                url = 'https://' + url;
-            }
-            return `<div class="external-link"><span class="link-icon">🔗</span><a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(input)}</a></div>`;
+        let url = input.trim();
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            url = 'https://' + url;
         }
-        return null;
+        // 简单URL验证
+        try {
+            new URL(url);
+            return `<div class="external-link"><span class="link-icon">🔗</span><a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(input)}</a></div>`;
+        } catch(e) {
+            return null;
+        }
     }
 
+    // 核心修复：正确解析文章内容，先处理标记，再转义纯文本
     function parseArticleContent(content) {
         if (!content) return '';
         
-        // 先处理视频标记
-        const biliRegex = /\[bilibili:([^\]]+)\]/g;
-        // 再处理链接标记
-        const linkRegex = /\[link:([^\]]+)\]/g;
-        
         let result = content;
         
-        // 处理哔哩哔哩视频
-        result = result.replace(biliRegex, (match, videoId) => {
+        // 第一步：处理哔哩哔哩视频标记 [bilibili:xxx]
+        result = result.replace(/\[bilibili:([^\]]+)\]/g, (match, videoId) => {
             const videoCode = convertToBilibiliEmbed(videoId);
             return videoCode || `<span style="color:#b55a3c;">[无效视频: ${escapeHtml(videoId)}]</span>`;
         });
         
-        // 处理外部链接
-        result = result.replace(linkRegex, (match, url) => {
+        // 第二步：处理链接标记 [link:xxx]
+        result = result.replace(/\[link:([^\]]+)\]/g, (match, url) => {
             const linkCode = convertToLinkEmbed(url);
             return linkCode || `<span style="color:#b55a3c;">[无效链接: ${escapeHtml(url)}]</span>`;
         });
         
-        // 转义普通文本
+        // 第三步：对剩余的纯文本进行HTML转义（但保留已经生成的HTML标签）
+        // 注意：由于上面已经替换了标记，现在 result 中混合了 HTML 标签和纯文本
+        // 需要将纯文本部分转义，但保留 HTML 标签不被转义
+        // 使用一个临时标记来保护 HTML 标签
+        const htmlPlaceholders = [];
+        result = result.replace(/<[^>]+>/g, (match) => {
+            const placeholder = `__HTML_PLACEHOLDER_${htmlPlaceholders.length}__`;
+            htmlPlaceholders.push(match);
+            return placeholder;
+        });
+        
+        // 转义剩余文本（纯文本部分）
         result = escapeHtml(result);
+        
+        // 恢复 HTML 标签
+        htmlPlaceholders.forEach((html, i) => {
+            result = result.replace(`__HTML_PLACEHOLDER_${i}__`, html);
+        });
+        
+        // 处理换行
         result = result.replace(/\n/g, '<br>');
         
         return result;
@@ -1525,7 +1542,7 @@
                 <div class="card relative-edit"><h2 class="section-title">❤️ 个人喜好</h2><div class="hobbies-list">${hobbiesArray.length ? hobbiesArray.map(h => `<span class="hobby-tag">${escapeHtml(h)}</span>`).join('') : '<span style="color:#aa947c;">暂无喜好</span>'}</div>${editMode ? `<div class="edit-icon" data-edit-field="hobbies" data-label="喜好列表(逗号分隔)">✎ 编辑喜好</div>` : ''}</div>
             </div>
             <div class="grid-layout"><div class="card full-width relative-edit">
-                <h2 class="section-title">🎬 哔哩哔哩 · 影像诗</h2>
+                <h2 class="section-title">🎬 一些好看的视频</h2>
                 ${blogData.videoIntro ? `<div class="video-intro">${escapeHtml(blogData.videoIntro)}</div>` : ''}
                 <div class="video-container" id="biliVideoContainer"></div>
                 <div class="bili-tip">💡 管理员登录后点击右上角铅笔更换 B站视频</div>
